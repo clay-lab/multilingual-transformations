@@ -1,5 +1,6 @@
 import argparse
 import json
+import gzip
 
 def evaluate_predictions(pred_filename, gold_filename, passiv=False):
   
@@ -7,7 +8,7 @@ def evaluate_predictions(pred_filename, gold_filename, passiv=False):
     returns first word accuracy, exact match accuracy
     if passiv is True, return second word accuracy
   '''
-  with open(pred_filename, "r") as pred_f, open(gold_filename) as gold_f:
+  with open(pred_filename, "r") as pred_f, gzip.open(gold_filename) as gold_f:
     pred_lines = pred_f.readlines()
     gold_lines = gold_f.readlines()
     
@@ -16,7 +17,7 @@ def evaluate_predictions(pred_filename, gold_filename, passiv=False):
     first_correct = 0.0
     for i in range(len(pred_lines)):
       pred_line = pred_lines[i].strip()
-      if gold_filename.endswith(".json"):
+      if gold_filename.endswith(".json.gz"):
         gold_json = json.loads(gold_lines[i])
         gold_line = gold_json["translation"]["tgt"]
       else:  
