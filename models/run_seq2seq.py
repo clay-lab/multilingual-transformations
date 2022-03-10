@@ -25,6 +25,7 @@ import os
 import re
 import sys
 import glob
+import gzip
 from operator import itemgetter
 from dataclasses import dataclass, field
 from typing import Optional
@@ -216,11 +217,11 @@ class DataTrainingArguments:
             raise ValueError("Need either a dataset name or a training/validation file.")
         else:
             if self.train_file is not None:
-                extension = self.train_file.split(".")[-1]
-                assert extension in ["csv", "json"], "`train_file` should be a csv or a json file."
+                extension = '.'.join(self.train_file.split(".")[1:])
+                assert extension in ["csv", "json", "csv.gz", "json.gz"], "`train_file` should be a csv or a json file."
             if self.validation_file is not None:
-                extension = self.validation_file.split(".")[-1]
-                assert extension in ["csv", "json"], "`validation_file` should be a csv or a json file."
+                extension = '.'.join(self.validation_file.split(".")[1:])
+                assert extension in ["csv", "json", "csv.gz", "json.gz"], "`validation_file` should be a csv or a json file."
         if not self.task.startswith("summarization") and not self.task.startswith("translation"):
             raise ValueError(
                 "`task` should be summarization, summarization_{dataset}, translation or translation_{xx}_to_{yy}."
@@ -235,10 +236,16 @@ def main():
     # We now keep distinct sets of args, for a cleaner separation of concerns.
 
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, Seq2SeqTrainingArguments))
-    if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
-        # If we pass only one argument to the script and it's the path to a json file,
-        # let's parse it to get our arguments.
-        model_args, data_args, training_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
+    if len(sys.argv) == 2 
+        if (sys.argv[1].endswith(".json"):
+            # If we pass only one argument to the script and it's the path to a json file,
+            # let's parse it to get our arguments.
+            
+            model_args, data_args, training_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
+        if sys.argv[1].endswith('.json.gz'):
+            with gzip.open(sys.argv[1], 'rb') as f:
+                model_args, data_args, training_args = parser.parse_json_file(json_file=f)
+        
     else:
         model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
@@ -523,14 +530,16 @@ def main():
                     writer.write(f"{key} = {value}\n")
 
             # Need to save the state, since Trainer.save_model saves only the tokenizer with the model
-            trainer.state.save_to_json(os.path.join(training_args.output_dir, "trainer_state.json"))
+            with gzip.open(os.path.join(training_args.output_dir, "trainer_state.json")) as f:
+                trainer.state.save_to_json(f)
+            # trainer.state.save_to_json(os.path.join(training_args.output_dir, "trainer_state.json"))
 
     # Evaluation
     results = {}
     if training_args.do_eval:
         logger.info("*** Evaluate ***")
 
-        basename = os.path.basename(data_args.validation_file).replace(".json", "")
+        basename = os.path.basename(data_args.validation_file).replace(".json", "").replace(".gz", "")
 
         predictions = trainer.predict(test_dataset=eval_dataset, max_length=100)
         output_pred_file = os.path.join(training_args.output_dir, basename + ".eval_preds_seq2seq.txt")
@@ -553,7 +562,7 @@ def main():
 
     if data_args.do_learning_curve:
 
-      basename = os.path.basename(data_args.validation_file).replace(".json", "")
+      basename = os.path.basename(data_args.validation_file).replace(".json", "").replace(".gz", "")
 
       for path in glob.glob(os.path.join(training_args.output_dir, "checkpoint-*", "")):
         output_pred_file = os.path.join(path, basename + ".eval_preds_seq2seq.txt")
@@ -603,7 +612,7 @@ def main():
       
       eval_triples = []
       for path in glob.glob(os.path.join(training_args.output_dir, "checkpoint-*", "")):
-          basename = os.path.basename(data_args.validation_file).replace(".json", "")
+          basename = os.path.basename(data_args.validation_file).replace(".json", "").replace(".gz", "")
           eval_file = os.path.join(path, basename + ".eval_results_seq2seq.txt")
           with open(eval_file, "r") as reader:
               reader.readline()
