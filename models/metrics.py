@@ -1,4 +1,5 @@
 import json
+import gzip
 from collections import Counter
 
 
@@ -557,7 +558,7 @@ METRIC_FUNCTIONS = {
   }
 
 def compute_metrics(metrics, pred_file, gold_file, prefix=None):
-  with open(pred_file, "r") as pred_f, open(gold_file) as gold_f:
+  with open(pred_file, "r") as pred_f, gzip.open(gold_file) as gold_f:
     pred_lines = pred_f.readlines()
     gold_lines = gold_f.readlines()
 
@@ -565,7 +566,7 @@ def compute_metrics(metrics, pred_file, gold_file, prefix=None):
     correct = Counter()
     for i in range(len(pred_lines)):
       pred_line = pred_lines[i].strip()
-      if gold_file.endswith(".json"):
+      if gold_file.endswith(".json.gz"):
         gold_json = json.loads(gold_lines[i])
         if prefix is not None and gold_json["translation"]["prefix"] != prefix:
             continue
