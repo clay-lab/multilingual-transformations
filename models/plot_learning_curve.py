@@ -36,7 +36,7 @@ def main():
       eval_results = {}
       metric_names = args.metrics.split(",")
       metrics_str = "-".join(metric_names)
-      basename = os.path.basename(args.gold_filename).replace(".json", "")
+      basename = os.path.basename(args.gold_filename).replace(".json", "").replace(".gz", "")
       for path in glob.glob(os.path.join(args.checkpoint_dir, "checkpoint-*", "")):
 
           pred_filename = os.path.join(path, basename + ".eval_preds_seq2seq.txt")
