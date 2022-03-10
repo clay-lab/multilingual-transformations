@@ -42,7 +42,7 @@ def main():
       model_results = defaultdict(dict)
       metric_names = args.metrics.split(",")
       metrics_str = "-".join(metric_names)
-      basename = os.path.basename(args.gold_filename).replace(".json", "")
+      basename = os.path.basename(args.gold_filename).replace(".json", "").replace(".gz", "")
       for checkpoint_dir in checkpoint_dirs:
         model_name = os.path.dirname(checkpoint_dir).split("-")[0]
         model_name = model_name.split("/")[-1]
