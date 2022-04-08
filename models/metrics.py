@@ -558,7 +558,8 @@ METRIC_FUNCTIONS = {
   }
 
 def compute_metrics(metrics, pred_file, gold_file, prefix=None):
-  with open(pred_file, "r") as pred_f, gzip.open(gold_file) as gold_f:
+  open_file = open if gold_file.endswith('.gz') else gzip.open
+  with open(pred_file, "r") as pred_f, open_file(gold_file) as gold_f:
     pred_lines = pred_f.readlines()
     gold_lines = gold_f.readlines()
 
