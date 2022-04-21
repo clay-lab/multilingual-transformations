@@ -80,10 +80,10 @@ def create_data_path(d: str) -> None:
     Creates a path if one does not exist. Treats final split as file prefix.
     '''
     split_d = os.path.split(d)
-    if len(d) > 1:
-        if not os.path.isdir(os.path.join(*split_d[:-1])):
-            print(f'Creating directory @ "' + '/'.join(*split_d[:-1]) + '"')
-            os.makedirs(os.path.join(*split_d[:-1]))
+    if len(split_d) > 1:
+        if not os.path.isdir(split_d[0]):
+            print(f'Creating directory @ "{split_d[0]}"')
+            os.makedirs(split_d[0])
 
 def create_dataset_json(
     grammar: PCFG, 
@@ -131,13 +131,12 @@ def combine_dataset_jsons(
     :param *files: Tuple[str]: tuple of strings containing the files to combine 
                                (in the order they should be put into the resulting file)
     '''
-    file_prefix = file_prefix + '_' if file_prefix and not (file_prefix[-1] in ['-', '_']) else ''
     create_data_path(os.path.join('data', file_prefix))
     
     combined = ''
     for file in files:
-        with gzip.open(file, 'rt', encoding='utf-8') as in_file:
-            file += in_file.read()
+        with gzip.open(os.path.join('data', file + ('.json.gz' if not file.endswith('.json.gz') else '')), 'rt', encoding='utf-8') as in_file:
+            combined += in_file.read()
     
-    with gzip.open(file_prefix + '.json.gz', 'wt', encoding='utf-8') as f:
+    with gzip.open(os.path.join('data', file_prefix + '.json.gz'), 'wt', encoding='utf-8') as f:
         f.write(combined)

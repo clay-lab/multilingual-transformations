@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=MT5-base-eval-neg-de-en
+#SBATCH --job-name=MT5-base-eval-neg-en-tu
 #SBATCH --output=joblogs/%x_%j.txt
 #SBATCH --nodes=1 
 #SBATCH --cpus-per-task=1
@@ -20,9 +20,9 @@ python models/run_seq2seq.py \
     --do_eval \
     --do_learning_curve \
     --task translation_src_to_tgt \
-    --train_file data/neg_de-en/neg_de-no_indef_en_train.json.gz \
-    --validation_file data/neg_de-en/neg_en_test.json.gz \
-    --output_dir outputs/mt5-finetuning-neg-de-no-indef-en-bs128/  \
+    --train_file data/neg_en-tu/neg_en_tu_train.json.gz \
+    --validation_file data/neg_en-tu/neg_tu_test.json.gz \
+    --output_dir outputs/mt5-finetuning-neg-en-tu-bs128/  \
     --per_device_train_batch_size=8 \
     --per_device_eval_batch_size=16 \
     --overwrite_output_dir \
