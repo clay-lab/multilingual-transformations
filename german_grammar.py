@@ -355,7 +355,7 @@ def negate(t: Tree) -> Tree:
 		if main_clause_subj_det and 'ein' in main_clause_subj_det[0]:
 			main_clause_subj_det[0] = 'k' + main_clause_subj_det[0]
 			return t_copy
-	except:
+	except StopIteration:
 		pass
 	
 	# if the subject is not indefinite,
@@ -396,7 +396,7 @@ def negate(t: Tree) -> Tree:
 			main_clause_indef_obj_det[0] = 'nicht ' + main_clause_indef_obj_det[0]
 			return t_copy
 	# if we fail above, it's because there is no object with a determiner	
-	except:
+	except StopIteration:
 		pass
 	
 	# Get the verb within the main VP within the main clause VP
@@ -411,11 +411,10 @@ def negate(t: Tree) -> Tree:
 	
 	return t_copy
 
-def test_file(grammar = nicht_grammar, n = 10, filename = 'test.txt'):
+def test_file(grammar: PCFG = nicht_grammar, n: int = 10, filename: str = 'test.txt'):
 	"""
 	Create a small test file with n pairs of formatted positive and negative sentences
 	"""
-	import re
 	s = [negation(grammar) for _ in range(n)]
 	with open(filename, 'w') as out:
 		for pair in s:
