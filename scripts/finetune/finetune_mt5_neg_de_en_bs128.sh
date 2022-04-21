@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name=MT5-base-finetune-neg-de
-#SBATCH --output=joblogs/test_neg_de_%j.txt
+#SBATCH --job-name=MT5-base-finetune-neg-de-en
+#SBATCH --output=joblogs/test_neg_de_en_%j.txt
 #SBATCH --nodes=1 
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=30GB 
