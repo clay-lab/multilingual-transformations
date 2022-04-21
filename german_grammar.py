@@ -5,7 +5,7 @@ from nltk import nonterminals, Nonterminal, Production
 import random
 from typing import *
 from generator import generate
-from generator import create_dataset_json
+from generator import create_dataset_json, combine_dataset_jsons
 """
 	Create some nonterminals
 

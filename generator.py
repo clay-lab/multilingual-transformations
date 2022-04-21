@@ -108,3 +108,23 @@ def create_dataset_json(
                 for ex in tqdm(l):
                     json.dump(ex, f, ensure_ascii=False)
                     f.write('\n')
+
+def combine_dataset_jsons(
+    file_prefix: str = '',
+    *files: Tuple[str],
+) -> None:
+    '''
+    Combines dataset jsons.
+    :param file_prefix: str: a prefix (without extension) to give to the combine file
+    :param *files: Tuple[str]: tuple of strings containing the files to combine 
+                               (in the order they should be put into the resulting file)
+    '''
+    file_prefix = file_prefix + '_' if file_prefix and not (file_prefix[-1] in ['-', '_']) else ''
+    
+    combined = ''
+    for file in files:
+        with gzip.open(file, 'rt', encoding='utf-8') as in_file:
+            file += in_file.read()
+    
+    with gzip.open(file_prefix + '.json.gz', 'wt', encoding='utf-8') as f:
+        f.write(combined)

@@ -1,24 +1,12 @@
 import sys
 #!{sys.executable} -m pip install nltk
 
-
-
-import csv
-import itertools
-import random
-from tqdm import tqdm
-import sys
-import json
-import gzip
-from typing import *
 import re
-from nltk import CFG, PCFG, Tree, nonterminals, Nonterminal, \
-    Production
 import random
-from generator import generate
-#from generator import create_file
 
-
+from nltk import PCFG, Tree
+from typing import *
+from generator import generate, create_dataset_json, combine_dataset_jsons
 
 turkish_grammar = PCFG.fromstring("""
     S -> VP Person [.33]
@@ -46,37 +34,32 @@ turkish_grammar = PCFG.fromstring("""
     V_stem_intrans -> ' dinlen' [.05]| ' git' [.05] | ' öğren' [.05] |  ' izin ver' [.05]|' bekle' [.05]  | ' imdat iste' [.05] | ' özür dile'[.05] | ' oy ver' [.05] | ' gül' [.05] |' şikayet et'[.05]| ' övün'[.05]| ' şaşır'[.05] | ' acele et'[.05]| ' hata yap'[.05]| ' otur'[.05]| ' dur'[.05] | ' bağır' [.05]| ' not al'[.05] | ' yüz'[.05]| ' düşün'[.05]
 """)
 
-
-def vh(expression):
+def vh(expression: str) -> str:
     expression = re.sub('(?<=u.)-i', 'u', expression)
     expression = re.sub('(?<=a.)-i', 'ı', expression)
     expression = re.sub('(?<=ı.)-i', 'ı', expression)
     expression = re.sub('(?<=o.)-i', 'u', expression)
     expression = re.sub('(?<=ü.)-i', 'ü', expression)
     expression = re.sub('(?<=ö.)-i', 'ü', expression)
-#    expression = re.sub('(?<=e.)-i', 'u', expression)
+    # expression = re.sub('(?<=e.)-i', 'u', expression)
     
-#   expression = re.sub('(?<=s.)n', 'd', expression)
+    # expression = re.sub('(?<=s.)n', 'd', expression)
     expression = re.sub('i-i', 'iyi', expression)
-#    expression = re.sub('a-iy', 'ıy', expression)
-   
+    # expression = re.sub('a-iy', 'ıy', expression)
+    
     expression = re.sub('a-i', 'ayı', expression)
     expression = re.sub('ı-i', 'ıyı', expression)
-
-
     
     expression = re.sub('i-l', 'iyl', expression)
     expression = re.sub('e-l', 'eyl', expression)
     expression = re.sub('ü-l', 'üyl', expression)
     expression = re.sub('ö-l', 'öyl', expression)
-
+    
     expression = re.sub('ı-le', 'iyla', expression)
     expression = re.sub('a-le', 'ayla', expression)
     expression = re.sub('u-le', 'uyla', expression)
     expression = re.sub('o-le', 'oyla', expression)
-
-
-
+    
     expression = re.sub('(?<=ü.)-di', 'dü', expression)
     expression = re.sub('(?<=ö.)-di', 'dü', expression)
     expression = re.sub('(?<=a.)-di', 'dı', expression)
@@ -94,16 +77,16 @@ def vh(expression):
     expression = re.sub('(?<=i.)-iyor', 'iyor', expression)
     expression = re.sub('(?<=e.)-iyor', 'iyor', expression)
     expression = re.sub('(?<=o.)-iyor', 'uyor', expression)
-
+    
     expression = re.sub('a-di', 'adı', expression)
     expression = re.sub('a-iyor', 'ıyor', expression)
-
+    
     expression = re.sub('e-di', 'edi', expression)
     expression = re.sub('e-iyor', 'iyor', expression)
-
+    
     expression = re.sub('e-ecek', 'eyecek', expression)
     expression = re.sub('a-ecek', 'ayacak', expression)
-
+    
     expression = re.sub('(?<=ü.)-ecek', 'ecek', expression)
     expression = re.sub('(?<=ö.)-ecek', 'ecek', expression)
     expression = re.sub('(?<=a.)-ecek', 'acak', expression)
@@ -112,28 +95,20 @@ def vh(expression):
     expression = re.sub('(?<=i.)-ecek', 'ecek', expression)
     expression = re.sub('(?<=e.)-ecek', 'ecek', expression)
     expression = re.sub('(?<=o.)-ecek', 'acak', expression)
-
-
-
-
-
-
-
-
+    
     expression = re.sub('k-i', 'ği', expression)
-#    expression = re.sub('di-sin', 'din', expression)
+    # expression = re.sub('di-sin', 'din', expression)
     expression = re.sub('ör-i', 'örü', expression)
-#    expression = re.sub('ör-di', 'ördü', expression)
-#    expression = re.sub('a-di', 'adı', expression)
+    # expression = re.sub('ör-di', 'ördü', expression)
+    # expression = re.sub('a-di', 'adı', expression)
     expression = re.sub('t-d', 'tt', expression)
     expression = re.sub('k-d', 'kt', expression)
-
+    
     expression = re.sub('td', 'tt', expression)
     expression = re.sub('kd', 'kt', expression)
-
-
+    
     expression = re.sub('ap-de', 'apta', expression)
-
+    
     expression = re.sub('t-i', 'di', expression)
     expression = re.sub('a-de-ki', 'adaki', expression)
     expression = re.sub('ei', 'i', expression)
@@ -141,42 +116,35 @@ def vh(expression):
     expression = re.sub('aı', 'ı', expression)
     expression = re.sub('gite', 'gide', expression)
     expression = re.sub('ete', 'ede', expression)
-
-
-
+    
     return expression
 
-
-
-def vh_n(expression):
+def vh_n(expression: str) -> str:
     expression = re.sub('(?<=u.)-i', 'u', expression)
     expression = re.sub('(?<=a.)-i', 'ı', expression)
     expression = re.sub('(?<=ı.)-i', 'ı', expression)
     expression = re.sub('(?<=o.)-i', 'u', expression)
     expression = re.sub('(?<=ü.)-i', 'ü', expression)
     expression = re.sub('(?<=ö.)-i', 'ü', expression)
-#    expression = re.sub('(?<=e.)-i', 'u', expression)
+    # expression = re.sub('(?<=e.)-i', 'u', expression)
     
-#   expression = re.sub('(?<=s.)n', 'd', expression)
+    # expression = re.sub('(?<=s.)n', 'd', expression)
     expression = re.sub('i-i', 'iyi', expression)
-#    expression = re.sub('a-iy', 'ıy', expression)
-   
+    # expression = re.sub('a-iy', 'ıy', expression)
+    
     expression = re.sub('a-i', 'ayı', expression)
     expression = re.sub('ı-i', 'ıyı', expression)
-
-
+    
     expression = re.sub('i-l', 'iyl', expression)
     expression = re.sub('e-l', 'eyl', expression)
     expression = re.sub('ü-l', 'üyl', expression)
     expression = re.sub('ö-l', 'öyl', expression)
-
+    
     expression = re.sub('ı-le', 'iyla', expression)
     expression = re.sub('a-le', 'ayla', expression)
     expression = re.sub('u-le', 'uyla', expression)
     expression = re.sub('o-le', 'oyla', expression)
-
-
-
+    
     expression = re.sub('(?<=ü.)-m--di', 'medi', expression)
     expression = re.sub('(?<=ö.)-m--di', 'medi', expression)
     expression = re.sub('(?<=a.)-m--di', 'madı', expression)
@@ -194,16 +162,16 @@ def vh_n(expression):
     expression = re.sub('(?<=i.)-m--iyor', 'miyor', expression)
     expression = re.sub('(?<=e.)-m--iyor', 'miyor', expression)
     expression = re.sub('(?<=o.)-m--iyor', 'muyor', expression)
-
+    
     expression = re.sub('a-m--di', 'amadı', expression)
     expression = re.sub('a-m--iyor', 'amıyor', expression)
-
+    
     expression = re.sub('e-m--di', 'emedi', expression)
     expression = re.sub('e-m--iyor', 'emiyor', expression)
     
     expression = re.sub('e-m--ecek', 'emeyecek', expression)
     expression = re.sub('a-m--ecek', 'amayacak', expression)
-
+    
     expression = re.sub('(?<=ü.)-m--ecek', 'meyecek', expression)
     expression = re.sub('(?<=ö.)-m--ecek', 'meyecek', expression)
     expression = re.sub('(?<=a.)-m--ecek', 'mayacak', expression)
@@ -212,26 +180,20 @@ def vh_n(expression):
     expression = re.sub('(?<=i.)-m--ecek', 'meyecek', expression)
     expression = re.sub('(?<=e.)-m--ecek', 'meyecek', expression)
     expression = re.sub('(?<=o.)-m--ecek', 'mayacak', expression)
-
-
-
-
-
-
+    
     expression = re.sub('k-i', 'ği', expression)
-#    expression = re.sub('di-sin', 'din', expression)
+    # expression = re.sub('di-sin', 'din', expression)
     expression = re.sub('ör-i', 'örü', expression)
-#    expression = re.sub('ör-di', 'ördü', expression)
-#    expression = re.sub('a-di', 'adı', expression)
+    # expression = re.sub('ör-di', 'ördü', expression)
+    # expression = re.sub('a-di', 'adı', expression)
     expression = re.sub('t-d', 'tt', expression)
     expression = re.sub('k-d', 'kt', expression)
-
+    
     expression = re.sub('td', 'tt', expression)
     expression = re.sub('kd', 'kt', expression)
-
-
+    
     expression = re.sub('ap-de', 'apta', expression)
-
+    
     expression = re.sub('t-i', 'di', expression)
     expression = re.sub('a-de-ki', 'adaki', expression)
     expression = re.sub('ei', 'i', expression)
@@ -239,37 +201,24 @@ def vh_n(expression):
     expression = re.sub('aı', 'ı', expression)
     expression = re.sub('gite', 'gide', expression)
     expression = re.sub('ete', 'ede', expression)
-
-
-
-    return expression
-
-
-def nodash(expression):
     
-    expression = re.sub('-', '', expression)
     return expression
 
-
-
-def vh2(expression):
+def vh2(expression: str) -> str:
     expression = re.sub('-', '', expression)
     expression = re.sub('p-d', 'pt', expression)
     expression = re.sub('sd', 'st', expression)
     expression = re.sub('etiyor', 'ediyor', expression)
     expression = re.sub('etece', 'edece', expression)
- #   expression = re.sub('a-ecek', 'ayacak', expression)
+    # expression = re.sub('a-ecek', 'ayacak', expression)
     expression = re.sub('itiyor', 'idiyor', expression)
     expression = re.sub('^\s', '', expression)
-
-
-
-
+    
     return expression
 
-def vowelharmony(expression):
-#    expression = re.sub('di-im', 'di-m', expression)
-#    expression = re.sub('di-sin', 'di-n', expression)
+def vowelharmony(expression: str) -> str:
+    # expression = re.sub('di-im', 'di-m', expression)
+    # expression = re.sub('di-sin', 'di-n', expression)
     expression = re.sub('(?<=ü.)-di-sin', 'dün', expression)
     expression = re.sub('(?<=ö.)-di-sin', 'dün', expression)
     expression = re.sub('(?<=a.)-di-sin', 'dın', expression)
@@ -304,7 +253,6 @@ def vowelharmony(expression):
     expression = re.sub('(?<=e.)-iyor-im', 'iyorum', expression)
     expression = re.sub('(?<=o.)-iyor-im', 'uyorum', expression)
     
-
     expression = re.sub('(?<=ü.)-ecek-sin', 'eceksin', expression)
     expression = re.sub('(?<=ö.)-ecek-sin', 'eceksin', expression)
     expression = re.sub('(?<=a.)-ecek-sin', 'acaksın', expression)
@@ -326,38 +274,31 @@ def vowelharmony(expression):
     expression = re.sub('a-di-sin', 'adın', expression)
     expression = re.sub('a-iyor-sin', 'ıyorsun', expression)
     expression = re.sub('a-iyor-im', 'ıyorum', expression)
-
+    
     expression = re.sub('e-di-im', 'edim', expression)
     expression = re.sub('e-di-sin', 'edin', expression)
     expression = re.sub('e-iyor-sin', 'iyorsun', expression)
     expression = re.sub('e-iyor-im', 'iyorum', expression)
-
     
     expression = re.sub('a-ecek-sin', 'ayacaksın', expression)
     expression = re.sub('e-ecek-sin', 'eyeceksin', expression)
-
+    
     expression = re.sub('a-ecek-im', 'ayacağım', expression)
     expression = re.sub('e-ecek-im', 'eyeceğim', expression)
-
-
-
-#    expression = re.sub('e-ec', 'eyec', expression)
-#    expression = re.sub('a-ecek', 'ayacak', expression)
-
+    
+    # expression = re.sub('e-ec', 'eyec', expression)
+    # expression = re.sub('a-ecek', 'ayacak', expression)
+    
     expression = re.sub('or-im', 'orum', expression)
     expression = re.sub('or-sin', 'orsun', expression)
-#    expression = re.sub('un-iy', 'unu', expression)
+    # expression = re.sub('un-iy', 'unu', expression)
     expression = re.sub('un-di', 'undu', expression)
-
-
-
-
+    
     return vh2((vh(expression)))
 
-
-def vowelharmony_n(expression):
-#    expression = re.sub('di-im', 'di-m', expression)
-#    expression = re.sub('di-sin', 'di-n', expression)
+def vowelharmony_n(expression: str) -> str:
+    # expression = re.sub('di-im', 'di-m', expression)
+    # expression = re.sub('di-sin', 'di-n', expression)
     expression = re.sub('(?<=ü.)-m--di-sin', 'medin', expression)
     expression = re.sub('(?<=ö.)-m--di-sin', 'medin', expression)
     expression = re.sub('(?<=a.)-m--di-sin', 'madın', expression)
@@ -392,7 +333,6 @@ def vowelharmony_n(expression):
     expression = re.sub('(?<=e.)-m--iyor-im', 'miyorum', expression)
     expression = re.sub('(?<=o.)-m--iyor-im', 'muyorum', expression)
     
-
     expression = re.sub('(?<=ü.)-m--ecek-sin', 'meyeceksin', expression)
     expression = re.sub('(?<=ö.)-m--ecek-sin', 'meyeceksin', expression)
     expression = re.sub('(?<=a.)-m--ecek-sin', 'mayacaksın', expression)
@@ -414,38 +354,29 @@ def vowelharmony_n(expression):
     expression = re.sub('a-m--di-sin', 'amadın', expression)
     expression = re.sub('a-m--iyor-sin', 'amıyorsun', expression)
     expression = re.sub('a-m--iyor-im', 'amıyorum', expression)
-
+    
     expression = re.sub('e-m--di-im', 'emedim', expression)
     expression = re.sub('e-m--di-sin', 'emedin', expression)
     expression = re.sub('e-m--iyor-sin', 'emiyorsun', expression)
     expression = re.sub('e-m--iyor-im', 'emiyorum', expression)
-
     
     expression = re.sub('a-m--ecek-sin', 'amayacaksın', expression)
     expression = re.sub('a-m--ecek-im', 'amayacağım', expression)
-
     
     expression = re.sub('e-m--ecek-sin', 'emeyeceksin', expression)
     expression = re.sub('e-m--ecek-im', 'emeyeceğim', expression)
-
-
-
- #   expression = re.sub('e-m--ec', 'emeyec', expression)
-  #  expression = re.sub('a-m--ece', 'amayaca', expression)
-
+    
+    # expression = re.sub('e-m--ec', 'emeyec', expression)
+    # expression = re.sub('a-m--ece', 'amayaca', expression)
+    
     expression = re.sub('or-im', 'orum', expression)
     expression = re.sub('or-sin', 'orsun', expression)
-#    expression = re.sub('un-iy', 'unu', expression)
+    # expression = re.sub('un-iy', 'unu', expression)
     expression = re.sub('un-di', 'undu', expression)
-
-
-
-
+    
     return vh2(vh_n(expression))
 
-
-def vowelharmony_neg(expression):
-
+def vowelharmony_neg(expression: str) -> str:
     expression = re.sub('mdü', 'medi', expression)
     expression = re.sub('mdı', 'madı', expression)
     expression = re.sub('mdu', 'madı', expression)
@@ -454,47 +385,51 @@ def vowelharmony_neg(expression):
     expression = re.sub('mtı', 'madı', expression)
     expression = re.sub('mtu', 'madı', expression)
     expression = re.sub('mti', 'medi', expression)   
- 
-
-
+    
     expression = re.sub('mece', 'meyec', expression)
     expression = re.sub('mece', 'mayac', expression)  
-
-
+    
     return expression
 
-
-def vh_neg(expression):
+def vh_neg(expression: str) -> str:
+    
     return vowelharmony_neg(vowelharmony(expression))
 
-def negation(grammar):
+'''
+def nodash(expression: str) -> str:
+    expression = re.sub('-', '', expression)
+    return expression
+'''
+
+def affirmation(grammar: PCFG) -> Tuple[str]:
     pos_tree = generate(grammar)
     pos = ''.join(pos_tree.leaves())
     source = vowelharmony(pos)
-    target = vowelharmony(pos)
-    (pos) = 'pos'
-    (neg) = 'neg'
-    return source, (pos), target
+    source = (source[0].upper() if not source[0] == 'i' else 'İ') + source[1:] + '.'
+    return source, 'pos', source
 
-def affirmation(grammar):
+def negation(grammar: PCFG) -> Tuple[str]:
     pos_tree = generate(grammar)
     pos = ''.join(pos_tree.leaves())
+    
     neg_tree = negate(pos_tree)
     neg = ''.join(neg_tree.leaves())
+    
     source = vowelharmony(pos)
+    source = (source[0].upper() if not source[0] == 'i' else 'İ') + source[1:] + '.'
+    
     target = vowelharmony_n(neg)
-    (pos) = 'pos'
-    (neg) = 'neg'
-    return source, (neg), target
+    target = (target[0].upper() if not target[0] == 'i' else 'İ') + target[1:] + '.'
+    
+    return source, 'neg', target
 
-def neg_or_pos(grammar, p=.5):
-    if random.random()<p:
-        return affirmation(grammar)
-    else:
-        return negation(grammar)
+def neg_or_pos(grammar: PCFG, neg_p: float = 0.5) -> Tuple[str]:
+    
+    return negation(grammar) if random.random() < neg_p else affirmation(grammar)
 
-
-def negate(t):
+def negate(t: Tree) -> Tree:
+    t = t.copy(deep=True)
+    
     symbol = t[0].label().symbol()
     if symbol == 'VP':
         symbol2 = t[0,0].label().symbol()
@@ -517,4 +452,3 @@ def negate(t):
             verbstem = verbstem + '-m-'
             t[1,0,0,0] = verbstem
     return t
-
