@@ -1,3 +1,4 @@
+import os
 import sys
 import csv
 import json
@@ -74,6 +75,16 @@ def create_csv_file(filename: str, grammar: PCFG, ex_generator: Callable, n: int
             (pos), src, (neg), targ = ex_generator(grammar)
             output_writer.writerow([(pos) + src + ' ' + (neg) + targ])
 
+def create_data_path(d: str) -> None:
+    '''
+    Creates a path if one does not exist. Treats final split as file prefix.
+    '''
+    split_d = os.path.split(d)
+    if len(d) > 1:
+        if not os.path.isdir(os.path.join(*split_d[:-1])):
+            print(f'Creating directory @ "' + '/'.join(*split_d[:-1]) + '"')
+            os.makedirs(os.path.join(*split_d[:-1]))
+
 def create_dataset_json(
     grammar: PCFG, 
     ex_generator: Callable, 
@@ -89,6 +100,7 @@ def create_dataset_json(
                    ex: train=10000, dev=1000, test=10000
     """
     file_prefix = file_prefix + '_' if file_prefix and not (file_prefix[-1] in ['-', '_']) else ''
+    create_data_path(os.path.join('data', file_prefix))
     
     for name, n_examples in splits.items():
         prefixes = {}
@@ -120,6 +132,7 @@ def combine_dataset_jsons(
                                (in the order they should be put into the resulting file)
     '''
     file_prefix = file_prefix + '_' if file_prefix and not (file_prefix[-1] in ['-', '_']) else ''
+    create_data_path(os.path.join('data', file_prefix))
     
     combined = ''
     for file in files:
