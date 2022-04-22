@@ -5,7 +5,7 @@
 #SBATCH --nodes=1 
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=30GB 
-#SBATCH --time=00:20:00
+#SBATCH --time=05:00:00
 #SBATCH --gpus=v100:1
 #SBATCH --partition=gpu
 
@@ -21,7 +21,7 @@ python models/run_seq2seq.py \
     --do_learning_curve \
     --task translation_src_to_tgt \
     --train_file data/neg_de/neg_de-no_indef_train.json.gz \
-    --validation_file data/neg_de/neg_de-no_indef_dev.json.gz \
+    --validation_file data/neg_de/neg_de-no_indef_test.json.gz \
     --output_dir outputs/mt5-finetuning-neg-de-no-indef-bs128/  \
     --per_device_train_batch_size=8 \
     --per_device_eval_batch_size=16 \

@@ -5,7 +5,7 @@
 #SBATCH --nodes=1 
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=30GB 
-#SBATCH --time=02:00:00
+#SBATCH --time=05:00:00
 #SBATCH --gpus=v100:1
 #SBATCH --partition=gpu
 
