@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=MT5-base-finetune-neg-tu
-#SBATCH --output=joblogs/test_neg_tu_%j.txt
+#SBATCH --output=joblogs/%x_%j.txt
 #SBATCH --nodes=1 
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=30GB 
@@ -10,11 +10,11 @@
 #SBATCH --partition=gpu
 #SBATCH --mail-type=ALL
 
+module load CUDA
+module load cuDNN
 module load miniconda
 
-source activate py38
-
-cd ~/project/multilingual_transformations
+source activate /gpfs/loomis/project/frank/ref4/conda_envs/py38
 
 python models/run_seq2seq.py \
     --model_name_or_path 'google/mt5-base' \
