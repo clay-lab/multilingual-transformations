@@ -297,7 +297,6 @@ nicht_grammar_no_indef = PCFG.fromstring("""
 	
 """)
 
-
 def negation(grammar: PCFG) -> Tuple[str]:
 	pos_tree = generate(grammar)
 	source = ' '.join(pos_tree.leaves())
@@ -310,16 +309,16 @@ def negation(grammar: PCFG) -> Tuple[str]:
 	target = target[0].upper() + target[1:]
 	target = target.replace(' , ', ', ')
 	target += '.'
-
-	return source, 'neg', target
 	
+	return source, 'neg', target
+
 def affirmation(grammar: PCFG) -> Tuple[str]:
 	pos_tree = generate(grammar)
 	source = ' '.join(pos_tree.leaves())
 	source = source[0].upper() + source[1:]
 	source = source.replace(' , ', ', ')
 	source += '.'
-
+	
 	return source, 'pos', source
 	
 def neg_or_pos(grammar: PCFG, neg_p: float = 0.5) -> Tuple[str]:
@@ -422,9 +421,9 @@ def test_file(grammar: PCFG = nicht_grammar, n: int = 10, filename: str = 'test.
 
 if __name__ == '__main__':
 	create_dataset_json(
-		nicht_grammar_no_indef, 
+		nicht_grammar, 
 		neg_or_pos, 
-		file_prefix='neg_de/neg_de-no_indef', 
+		file_prefix='neg_de/neg_de', 
 		train=100000, 
 		dev=1000, 
 		test=10000, 
