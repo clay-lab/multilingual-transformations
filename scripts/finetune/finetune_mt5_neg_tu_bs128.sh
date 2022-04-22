@@ -8,6 +8,7 @@
 #SBATCH --time=07:00:00
 #SBATCH --gpus=v100:1
 #SBATCH --partition=gpu
+#SBATCH --mail-type=ALL
 
 module load miniconda
 

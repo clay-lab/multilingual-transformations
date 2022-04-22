@@ -8,6 +8,7 @@
 #SBATCH --time=20:00:00
 #SBATCH --gpus=v100:1
 #SBATCH --partition=gpu
+#SBATCH --mail-type=ALL
 
 module load CUDA
 module load cuDNN
