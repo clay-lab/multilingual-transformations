@@ -21,7 +21,7 @@ python models/run_seq2seq.py \
     --task translation_src_to_tgt \
     --train_file data/neg_en-tu/neg_en_tu_train.json.gz \
     --validation_file data/neg_en-tu/neg_en_dev.json.gz \
-    --output_dir outputs/mt5-finetuning-neg-en-tu-en-bs128/  \
+    --output_dir outputs/mt5-finetuning-neg-en-tu-bs128/  \
     --per_device_train_batch_size=8 \
     --gradient_accumulation_steps=16 \
     --per_device_eval_batch_size=16 \
