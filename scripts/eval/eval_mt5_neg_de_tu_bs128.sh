@@ -20,9 +20,9 @@ python models/run_seq2seq.py \
     --do_eval \
     --do_learning_curve \
     --task translation_src_to_tgt \
-    --train_file data/neg_de-tu/neg_de-no_indef_tu_train.json.gz \
+    --train_file data/neg_de-tu/neg_de_tu_train.json.gz \
     --validation_file data/neg_de-tu/neg_tu_test.json.gz \
-    --output_dir outputs/mt5-finetuning-neg-de-no-indef-tu-bs128/  \
+    --output_dir outputs/mt5-finetuning-neg-de-tu-bs128/  \
     --per_device_train_batch_size=8 \
     --per_device_eval_batch_size=16 \
     --overwrite_output_dir \

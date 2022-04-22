@@ -19,9 +19,9 @@ python models/run_seq2seq.py \
     --model_name_or_path 'google/mt5-base' \
     --do_train \
     --task translation_src_to_tgt \
-    --train_file data/neg_tu-de/neg_tu_de-no_indef_train.json.gz \
+    --train_file data/neg_tu-de/neg_tu_de_train.json.gz \
     --validation_file data/neg_tu-de/neg_tu_dev.json.gz \
-    --output_dir outputs/mt5-finetuning-neg-tu-de-no-indef-bs128/  \
+    --output_dir outputs/mt5-finetuning-neg-tu-de-bs128/  \
     --per_device_train_batch_size=8 \
     --gradient_accumulation_steps=16 \
     --per_device_eval_batch_size=16 \
