@@ -22,8 +22,8 @@ python models/run_seq2seq.py \
     --train_file data/neg_en/neg_en_train.json.gz \
     --validation_file data/neg_en/neg_en_dev.json.gz \
     --output_dir outputs/mt5-finetuning-neg-en-bs128/  \
-    --per_device_train_batch_size=8 \
-    --gradient_accumulation_steps=16 \
+    --per_device_train_batch_size=4 \
+    --gradient_accumulation_steps=32 \
     --per_device_eval_batch_size=16 \
     --overwrite_output_dir \
     --predict_with_generate \
