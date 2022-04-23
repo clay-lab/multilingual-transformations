@@ -23,7 +23,7 @@ python models/run_seq2seq.py \
     --task translation_src_to_tgt \
     --train_file data/neg_tu/neg_tu__train.json.gz \
     --validation_file data/neg_de/neg_de-no_indef_test.json.gz \
-    --output_dir outputs/mt5-finetuning-neg-tu-bs128/  \
+    --output_dir /vast/palmer/scratch/frank/ref4/shared/multilingual-transformations/outputs/mt5-finetuning-neg-tu-bs128/  \
     --per_device_train_batch_size=8 \
     --per_device_eval_batch_size=16 \
     --overwrite_output_dir \
