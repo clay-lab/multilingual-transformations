@@ -258,7 +258,7 @@ def combine_language_datasets_for_negation(langs: List[str], **kwargs) -> None:
 							  The pos_{lang} directories must contain a file named pos_{lang}_train.json.gz.
 	
 	:outputs: For each possible two-way permutation of languages in langs:
-			  a directory in data named neg_{lang1}-{lang2}, with the following datasets jsons.
+			  a directory in data named neg_{lang1}_{lang2}, with the following datasets jsons.
 			  neg_{lang1}_{lang2}_train.json.gz, containing positive-positive/negative training examples from lang1 
 			  	and positive-positive training examples from lang2.
 	'''
@@ -267,8 +267,8 @@ def combine_language_datasets_for_negation(langs: List[str], **kwargs) -> None:
 	all_pairs = permutations(langs, 2)
 	for lang1, lang2 in all_pairs:
 		print(f'Creating datasets for {lang1} -> {lang2}')
-		dirname 	= f'neg_{lang1}-{lang2}'
-		file_prefix = os.path.join(dirname, f'neg_{lang1}-{lang2}_train')
+		dirname 	= f'neg_{lang1}_{lang2}'
+		file_prefix = os.path.join(dirname, f'neg_{lang1}_{lang2}_train')
 		
 		# create the training dataset with pos-neg/pos examples from lang1 and pos-pos examples from lang2
 		combine_dataset_jsons(

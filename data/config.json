@@ -39,7 +39,7 @@
 		"german_grammar.nicht_grammar",
 		"german_grammar.neg_or_pos"
 	],
-	"de-no_indef": [
+	"de-no-indef": [
 		{
 			"neg": [
 				0.5, 
