@@ -10,6 +10,8 @@ outputs
 *.lock
 
 scripts/backup/
+scripts/old/
+data/old/
 
 __pycache__/
 **/__pycache__/

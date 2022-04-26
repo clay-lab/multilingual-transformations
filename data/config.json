@@ -1,0 +1,82 @@
+{
+	"en": [
+		{
+			"neg": [
+				0.5, 
+				{
+					"train": 100000, 
+					"dev": 1000, 
+					"test": 10000
+				}
+			], 
+			"pos": [
+				0, 
+				{
+					"train": 500
+				}
+			]
+		},
+		"english_grammar.not_grammar",
+		"english_grammar.neg_or_pos"
+	],
+	"de": [
+		{
+			"neg": [
+				0.5, 
+				{
+					"train": 100000, 
+					"dev": 1000, 
+					"test": 10000
+				}
+			], 
+			"pos": [
+				0, 
+				{
+					"train": 500
+				}
+			]
+		},
+		"german_grammar.nicht_grammar",
+		"german_grammar.neg_or_pos"
+	],
+	"de-no_indef": [
+		{
+			"neg": [
+				0.5, 
+				{
+					"train": 100000, 
+					"dev": 1000, 
+					"test": 10000
+				}
+			], 
+			"pos": [
+				0, 
+				{
+					"train": 500
+				}
+			]
+		},
+		"german_grammar.nicht_grammar_no_indef",
+		"german_grammar.neg_or_pos"
+	],
+	"tu": [
+		{
+			"neg": [
+				0.5, 
+				{
+					"train": 100000, 
+					"dev": 1000, 
+					"test": 10000
+				}
+			], 
+			"pos": [
+				0, 
+				{
+					"train": 500
+				}
+			]
+		},
+		"turkish_grammar.turkish_grammar",
+		"turkish_grammar.neg_or_pos"
+	]
+}
