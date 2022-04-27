@@ -16,7 +16,11 @@ from itertools import permutations
 from nltk import PCFG, Tree
 from nltk import nonterminals, Nonterminal, Production
 
-def generate(grammar: PCFG, start: str = None, depth: int = None) -> Iterator:
+def generate(
+	grammar: PCFG, 
+	start: str = None, 
+	depth: int = None
+) -> Iterator:
 	"""
 	Generates an iterator of all sentences from a CFG.
 
@@ -33,7 +37,11 @@ def generate(grammar: PCFG, start: str = None, depth: int = None) -> Iterator:
 	tree  = _generate(grammar,items, depth)
 	return tree[0]
 
-def _generate(grammar: PCFG, items: List[str], depth: int = None):
+def _generate(
+	grammar: PCFG, 
+	items: List[str], 
+	depth: int = None
+):
 	'''
 	Generates a sentence from the passed grammar.
 	
@@ -160,7 +168,10 @@ def combine_dataset_jsons(
 		with gzip.open(os.path.join('data', file_prefix + '.json.gz'), 'wt', encoding='utf-8') as f:
 			f.write(combined)
 
-def create_negation_datasets(configs: Dict[str,List] = None, **kwargs) -> None:
+def create_negation_datasets(
+	configs: Dict[str,List] = None, 
+	**kwargs
+) -> None:
 	'''
 	Create json datasets according to the passed configs.
 	:params configs: (List[Dict]): This should be in the following format:
@@ -248,7 +259,10 @@ def create_negation_datasets(configs: Dict[str,List] = None, **kwargs) -> None:
 		
 		print('')
 
-def combine_language_datasets_for_negation(langs: List[str], **kwargs) -> None:
+def combine_language_datasets_for_negation(
+	langs: List[str], 
+	**kwargs
+) -> None:
 	'''
 	Creates dataset jsons for each len 2 permutation of languages passed.
 	:param langs: List[str]: a list of language ids corrseponding to directories in ./data/
@@ -280,7 +294,10 @@ def combine_language_datasets_for_negation(langs: List[str], **kwargs) -> None:
 		
 		print('')
 
-def create_and_combine_negation_datasets(configs: Dict[str,List] = None, **kwargs) -> None:
+def create_and_combine_negation_datasets(
+	configs: Dict[str,List] = None, 
+	**kwargs
+) -> None:
 	'''
 	Create and then combine negation datasets for each combination of languages in configs.keys().
 	
@@ -298,7 +315,10 @@ def create_and_combine_negation_datasets(configs: Dict[str,List] = None, **kwarg
 	combine_language_datasets_for_negation(list(configs.keys()), **kwargs)
 	create_mt5_scripts(list(configs.keys()), **kwargs)
 
-def create_mt5_scripts(langs: List[str] = None, overwrite: bool = False) -> None:
+def create_mt5_scripts(
+	langs: List[str] = None, 
+	overwrite: bool = False
+) -> None:
 	'''
 	Creates finetuning and eval scripts for the passed configs for mt5.
 	
@@ -408,8 +428,14 @@ def create_mt5_scripts(langs: List[str] = None, overwrite: bool = False) -> None
 				with open(os.path.join('scripts', 'eval', f'eval_mt5_neg_{"_".join(lang)}_bs128_zs.sh'), 'wt') as out_file:
 					out_file.write(lang_zs_ev_script)
 	
-def load_config(path: str = None) -> Dict[str,List]:
-	'''Loads a dataset creation config file from disk.'''
+def load_config(path: 'Pathlike' = None) -> Dict[str,List]:
+	'''
+	Loads a dataset creation config file from disk.
+	
+	:param path: Pathlike: the path to the config file.
+						   If no path is provided, attempt to load
+						   ./data/config.json as the config.
+	'''
 	if path is None:
 		path = os.path.join('data', 'config.json')
 	
