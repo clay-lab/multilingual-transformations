@@ -393,7 +393,7 @@ def create_mt5_scripts(langs: List[str] = None, overwrite: bool = False) -> None
 		# if we have multiple languages, create a zero-shot version of the eval script
 		if len(lang) == 2:
 			lang_zs_ev_script 	= eval_script.replace(
-				'#SBATCH --job-name=MT5-base-eval-neg-[TRAIN-ZS-LANG]',
+				'#SBATCH --job-name=MT5-base-eval-neg-[TRAIN-LANG]',
 				'#SBATCH --job-name=MT5-base-eval-neg-[TRAIN-ZS-LANG]-zs'
 			)
 			train_lang 			= lang[0]

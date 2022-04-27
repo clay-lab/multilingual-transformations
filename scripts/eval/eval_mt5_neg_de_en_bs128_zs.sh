@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=MT5-base-eval-neg-de
+#SBATCH --job-name=MT5-base-eval-neg-de-en-zs
 #SBATCH --output=joblogs/%x_%j.txt
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
