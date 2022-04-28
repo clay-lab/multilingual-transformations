@@ -338,6 +338,8 @@ def create_mt5_scripts(
 		'#SBATCH --partition=gpu',
 		'#SBATCH --mail-type=ALL',
 		'',
+		'clear_hf_local_dataset_cache',
+		'',
 		'module load CUDA',
 		'module load cuDNN',
 		'module load miniconda',
@@ -429,11 +431,11 @@ def create_mt5_scripts(
 				with open(os.path.join('scripts', 'eval', f'eval_mt5_neg_{"_".join(lang)}_bs128_zs.sh'), 'wt') as out_file:
 					out_file.write(lang_zs_ev_script)
 	
-def load_config(path: 'Pathlike' = None) -> Dict[str,List]:
+def load_config(path: 'str or Pathlike' = None) -> Dict[str,List]:
 	'''
 	Loads a dataset creation config file from disk.
 	
-	:param path: Pathlike: the path to the config file.
+	:param path: str or Pathlike: the path to the config file.
 						   If no path is provided, attempt to load
 						   ./data/config.json as the config.
 	'''

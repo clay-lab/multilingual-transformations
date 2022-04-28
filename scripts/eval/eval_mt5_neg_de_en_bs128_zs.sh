@@ -10,6 +10,8 @@
 #SBATCH --partition=gpu
 #SBATCH --mail-type=ALL
 
+clear_hf_local_dataset_cache
+
 module load CUDA
 module load cuDNN
 module load miniconda
