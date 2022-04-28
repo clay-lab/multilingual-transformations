@@ -362,7 +362,8 @@ def create_mt5_scripts(
 	eval_script = script.replace('finetune', 'eval')
 	eval_script = eval_script.replace('--time=15:00:00', '--time=07:00:00')
 	eval_script = eval_script.replace('--do_train \\', '--do_eval \\\n	--do_learning_curve \\')
-	eval_script = eval_script.replace('[DEV_LANG]', '[TEST_LANG]').replace('_dev', '_test')
+	eval_script = eval_script.replace('[DEV_LANG]', '[TEST_LANG]')
+	eval_script = re.sub(r'_dev(\.|_)', '_test\\1', eval_script)
 	eval_script = eval_script.replace('--per_device_train_batch_size=4', '--per_device_train_batch_size=8')
 	eval_script = eval_script.replace('	--gradient_accumulation_steps=32 \\\n', '')
 	eval_script = eval_script.replace(
