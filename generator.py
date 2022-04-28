@@ -362,7 +362,7 @@ def create_mt5_scripts(
 	]) + '\n'
 	
 	eval_script = script.replace('finetune', 'eval')
-	eval_script = eval_script.replace('--time=15:00:00', '--time=07:00:00')
+	eval_script = eval_script.replace('--time=15:00:00', '--time=04:00:00')
 	eval_script = eval_script.replace('--do_train \\', '--do_eval \\\n	--do_learning_curve \\')
 	eval_script = eval_script.replace('[DEV_LANG]', '[TEST_LANG]')
 	eval_script = re.sub(r'_dev(\.|_)', '_test\\1', eval_script)
