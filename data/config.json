@@ -12,7 +12,7 @@
 			"pos": [
 				0, 
 				{
-					"train": 500
+					"train": 125
 				}
 			]
 		},
@@ -32,31 +32,11 @@
 			"pos": [
 				0, 
 				{
-					"train": 500
+					"train": 125
 				}
 			]
 		},
 		"german_grammar.nicht_grammar",
-		"german_grammar.neg_or_pos"
-	],
-	"de-no-indef": [
-		{
-			"neg": [
-				0.5, 
-				{
-					"train": 100000, 
-					"dev": 1000, 
-					"test": 10000
-				}
-			], 
-			"pos": [
-				0, 
-				{
-					"train": 500
-				}
-			]
-		},
-		"german_grammar.nicht_grammar_no_indef",
 		"german_grammar.neg_or_pos"
 	],
 	"tu": [
@@ -72,7 +52,7 @@
 			"pos": [
 				0, 
 				{
-					"train": 500
+					"train": 125
 				}
 			]
 		},
