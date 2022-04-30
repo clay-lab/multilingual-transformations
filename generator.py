@@ -174,7 +174,7 @@ def create_negation_datasets(
 ) -> None:
 	'''
 	Create json datasets according to the passed configs.
-	:params configs: (List[Dict]): This should be in the following format:
+	:param configs: (List[Dict]): This should be in the following format:
 								   A dict mapping a language id to a List of arguments.
 								   Each list of arguments consists of a Dict mapping str to floats, a PCFG, and an example generator function.
 								   The dict maps strings to a list containing a float and a dictionary containing splits.
@@ -230,7 +230,7 @@ def create_negation_datasets(
 	:param kwargs: passed to create_dataset_json
 	If no argument is passed, attempt to load the configs from a file ./data/config.json
 	'''
-	configs = load_configs() if configs is None else configs
+	configs = load_configs(configs) if configs is None or isinstance(configs,str) else configs
 	
 	for lang in configs:
 		print(f'Creating datasets for {lang}')
@@ -276,7 +276,7 @@ def combine_language_datasets_for_negation(
 			  neg_{lang1}_{lang2}_train.json.gz, containing positive-positive/negative training examples from lang1 
 			  	and positive-positive training examples from lang2.
 	'''
-	langs = list(load_config().keys()) if langs is None else langs
+	langs = list(load_config(langs).keys()) if langs is None or isinstance(langs,str) else langs
 	
 	all_pairs = permutations(langs, 2)
 	for lang1, lang2 in all_pairs:
@@ -309,7 +309,7 @@ def create_and_combine_negation_datasets(
 	
 	:outputs: see outputs of create_negation_datasets and combine_language_datasets_for_negation.
 	'''
-	configs = load_config() if configs is None else configs
+	configs = load_config(configs) if configs is None or isinstance(configs,str) else configs
 	
 	create_negation_datasets(configs, **kwargs)
 	combine_language_datasets_for_negation(list(configs.keys()), **kwargs)
@@ -337,8 +337,6 @@ def create_mt5_scripts(
 		'#SBATCH --gpus=v100:1',
 		'#SBATCH --partition=gpu',
 		'#SBATCH --mail-type=ALL',
-		'',
-		'clear_hf_local_dataset_cache',
 		'',
 		'module load CUDA',
 		'module load cuDNN',
@@ -372,7 +370,7 @@ def create_mt5_scripts(
 		'	--predict_with_generate \\'
 	)
 	
-	langs 		= list(load_config().keys()) if langs is None else langs
+	langs 		= list(load_config(langs).keys()) if langs is None or isinstance(langs,str) else langs
 	all_pairs 	= list(permutations(langs, 2))
 	langs 		= [tuple([lang]) for lang in langs] + all_pairs
 	

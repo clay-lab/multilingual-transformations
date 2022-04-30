@@ -1,0 +1,16 @@
+{
+	"test": [
+		{
+			"neg": [
+				0.5, 
+				{
+					"train": 100, 
+					"dev": 50, 
+					"test": 100
+				}
+			] 
+		},
+		"english_grammar.not_grammar",
+		"english_grammar.neg_or_pos"
+	]
+}
