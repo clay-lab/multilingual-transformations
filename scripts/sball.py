@@ -72,7 +72,7 @@ def sbatch_all(s):
 				'dsq', 
 				'--job-file', os.path.join('scripts', name + '.txt'), 
 				'--status-dir', 'joblogs' + os.path.sep, 
-				'--job-name', name, 
+				'--job-name', name,
 				'--output', os.path.join('joblogs', '/'.join(os.path.split(name)).split('/')[-1] + '-%A_%a.txt'),
 				'--submit',
 				*sbatch_options, 
