@@ -94,7 +94,7 @@ def create_csv_file(
 
 def create_data_path(d: str) -> None:
 	'''
-	Creates a path if one does not exist. Treats final split as file prefix.
+	Creates a path if one does not exist. Treats final split as a file prefix.
 	'''
 	split_d = os.path.split(d)
 	if len(split_d) > 1:
