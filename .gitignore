@@ -12,6 +12,7 @@ outputs
 scripts/backup/
 scripts/old/
 scripts/*.txt
+scripts/**/*.txt
 data/old/
 
 __pycache__/
