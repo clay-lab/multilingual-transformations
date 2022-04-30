@@ -333,7 +333,7 @@ def create_mt5_scripts(
 		'#SBATCH --nodes=1',
 		'#SBATCH --cpus-per-task=1',
 		'#SBATCH --mem=30GB',
-		'#SBATCH --time=15:00:00',
+		'#SBATCH --time=10:00:00',
 		'#SBATCH --gpus=v100:1',
 		'#SBATCH --partition=gpu',
 		'#SBATCH --mail-type=ALL',
@@ -362,7 +362,7 @@ def create_mt5_scripts(
 	]) + '\n'
 	
 	eval_script = script.replace('finetune', 'eval')
-	eval_script = eval_script.replace('--time=15:00:00', '--time=04:00:00')
+	eval_script = eval_script.replace('--time=10:00:00', '--time=04:00:00')
 	eval_script = eval_script.replace('--do_train \\', '--do_eval \\\n	--do_learning_curve \\')
 	eval_script = eval_script.replace('[DEV_LANG]', '[TEST_LANG]')
 	eval_script = re.sub(r'_dev(\.|_)', '_test\\1', eval_script)
@@ -397,7 +397,6 @@ def create_mt5_scripts(
 			dev_lang 		= lang[0]
 			train_dash_lang = '-'.join(lang)
 			test_lang 		= lang[1]
-			lang_ft_script 	= lang_ft_script.replace('--time=15:00:00', '--time=20:00:00')
 				
 		lang_ft_script = lang_ft_script.replace('[TRAIN_LANG]', train_lang)
 		lang_ft_script = lang_ft_script.replace('[DEV_LANG]', dev_lang)
