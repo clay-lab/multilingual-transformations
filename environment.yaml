@@ -19,3 +19,4 @@ dependencies:
   - matplotlib
   - protobuf
   - nltk
+  - awk-sdk-cpp=1.8.186
