@@ -336,7 +336,7 @@ def create_mt5_scripts(
 		'#SBATCH --time=10:00:00',
 		'#SBATCH --gpus=v100:1',
 		'#SBATCH --partition=gpu',
-		'#SBATCH --mail-type=ALL',
+		'#SBATCH --mail-type=FAIL',
 		'',
 		'module load CUDA',
 		'module load cuDNN',

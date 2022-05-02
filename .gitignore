@@ -11,6 +11,7 @@ outputs
 
 scripts/backup/
 scripts/old/
+scripts/clear_dataset_cache/
 scripts/*.txt
 scripts/**/*.txt
 data/old/
