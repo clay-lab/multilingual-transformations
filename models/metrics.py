@@ -2,6 +2,7 @@ import re
 import json
 
 from typing import *
+from itertools import cycle, zip_longest
 from inspect import signature
 from statistics import mean
 from collections import Counter
@@ -47,28 +48,6 @@ def metric(fun: Callable) -> Callable:
 				prop (float)	: the mean of the result of applying fun to each tuple of zipped args and kwargs,
 								  with None omitted. If every value is None, returns None
 		'''
-		# convert single elements to lists so we can iterate
-		args 	= [[arg] if not isinstance(arg,(list,tuple)) else arg for arg in args]
-		kwargs 	= {k : [v] if not isinstance(v,(list,tuple)) else v for k, v in kwargs.items()}
-		
-		# check lengths to make sure we can pad if needed
-		args_lens 	= [len(arg) for arg in args]
-		kwargs_lens = [len(v) for v in kwargs.values()]
-		assert len(set(l for l in args_lens if not l == 1).union(set(l for l in kwargs_lens if not l == 1))) <= 1, 'All arguments must be a single value or have the same length!'
-		
-		# pad len 1 arguments to support vectorization
-		maxlen 			= max([*args_lens, *kwargs_lens])
-		len_one_args 	= [i for i, l in enumerate(args_lens) if l == 1]
-		len_one_kwargs 	= {k: v for k, v in zip(kwargs.keys(), kwargs_lens) if v == 1}
-		
-		# we only need to pad if the max length isn't already 1
-		if maxlen != 1:
-			for i in len_one_args:
-				args[i] = args[i] * maxlen
-			
-			for k in len_one_kwargs:
-				kwargs[k] = kwargs[k] * maxlen
-		
 		# in our implementation, we want to be able to pass the 
 		# same arguments in the same order to each metric for ease of use.
 		# but not every metric will have every argument defined for it. 
@@ -77,10 +56,23 @@ def metric(fun: Callable) -> Callable:
 		sig 	= signature(fun)
 		names 	= [p.name for p in sig.parameters.values()]
 		kwnames = [name for name in names if name in kwargs.keys()]
-		
 		args 	= args[:min(len(names),len(args))]
 		kwargs 	= {k: v for k, v in kwargs.items() if k in kwnames}	
 		
+		# convert single elements to lists so we can iterate
+		args 	= [[arg] if not isinstance(arg,(list,tuple)) else arg for arg in args]
+		kwargs 	= {k : [v] if not isinstance(v,(list,tuple)) else v for k, v in kwargs.items()}
+		
+		# check lengths to make sure we can pad if needed
+		args_lens 	= [len(arg) for arg in args]
+		kwargs_lens = [len(v) for v in kwargs.values()]
+		assert len(set(l for l in args_lens + kwargs_lens if not l == 1)) <= 1, 'All arguments must be a single value or have the same length!'
+		
+		# pad len 1 arguments to support vectorization
+		if max([*args_lens, *kwargs_lens]) > 1:
+			args 	= [cycle(arg) if len(arg) == 1 else arg for arg in args]
+			kwargs 	= {k: cycle(v) if len(v) == 1 else v for k, v in kwargs.items()}
+			
 		# this zips over the args and kwargs
 		# by zipping over the args and the kwarg values
 		# and then repacking the kwargs values into a dictionary
