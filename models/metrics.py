@@ -2,17 +2,19 @@ import re
 import json
 
 from typing import *
-from itertools import cycle, zip_longest
+from itertools import cycle
 from inspect import signature
 from statistics import mean
-from collections import Counter
 
+# language-specific regexes to match neg word(s)
 NEG_REGEXES = {
 	'en': re.compile('not'),
 	'de': re.compile('nicht'),
 	'tu': re.compile('(m(i|ı|u|ü)y)|(m(adı|edi))|(m(aya|eye))'),
 }
 
+# language-specific lowercase functions
+# needed to deal with Turkish i's
 LOWERCASE = {
 	'en': lambda s: s.lower(),
 	'de': lambda s: s.lower(),
@@ -117,17 +119,30 @@ def metric(fun: Callable) -> Callable:
 	return return_fun
 
 @metric
-def exact_match(pred_sentence: str, gold_sentence: str) -> bool:
-	
+def exact_match(
+	pred_sentence: str, 
+	gold_sentence: str
+) -> bool:
+	'''Do the passed sentences match exactly?'''
 	return pred_sentence == gold_sentence
 
 @metric
-def ignorecase_exact_match(pred_sentence: str, gold_sentence: str, tgt_lang: str) -> bool:
-	
+def ignorecase_exact_match(
+	pred_sentence: str, 
+	gold_sentence: str, 
+	tgt_lang: str
+) -> bool:
+	'''Do the passed sentences match when converted to lowercase?'''
 	return LOWERCASE[tgt_lang](pred_sentence) == LOWERCASE[tgt_lang](gold_sentence)
 
 @metric
-def replace_negation_exact_match(pred_sentence: str, gold_sentence: str, src_lang: str, tgt_lang: str) -> bool:
+def replace_negation_exact_match(
+	pred_sentence: str, 
+	gold_sentence: str, 
+	src_lang: str, 
+	tgt_lang: str
+) -> bool:
+	'''Do the sentences match exactly when the neg words are replaced with identical values?'''
 	for lang in [src_lang, tgt_lang]:
 		pred_sentence 	= NEG_REGEXES[lang].sub('[NEG]', pred_sentence)
 		gold_sentence 	= NEG_REGEXES[lang].sub('[NEG]', gold_sentence)
@@ -143,62 +158,106 @@ def replace_negation_exact_match(pred_sentence: str, gold_sentence: str, src_lan
 	return exact_match(pred_sentence, gold_sentence)
 
 @metric
-def src_lang_negation_in_prediction(pred_sentence: str, src_lang: str) -> re.Match:
-	
+def src_lang_negation_in_prediction(
+	pred_sentence: str, 
+	src_lang: str
+) -> re.Match:
+	'''Is the neg word from the source language in the sentence?'''
 	return NEG_REGEXES[src_lang].search(LOWERCASE[src_lang](pred_sentence))
 
 @metric
-def tgt_lang_negation_in_prediction(pred_sentence: str, tgt_lang: str) -> re.Match:
-	
+def tgt_lang_negation_in_prediction(
+	pred_sentence: str,
+	tgt_lang: str
+) -> re.Match:
+	'''Is the neg word from the target language in the sentence?'''
 	return NEG_REGEXES[tgt_lang].search(LOWERCASE[tgt_lang](pred_sentence))
 
 @metric
-def first_word_match(pred_sentence: str, gold_sentence: str) -> bool:
+def first_word_match(
+	pred_sentence: str, 
+	gold_sentence: str
+) -> bool:
+	'''Does the first word of each sentence match?'''
 	pred_words = pred_sentence.split()
 	gold_words = gold_sentence.split()
 	return pred_words[0] == gold_words[0]
 
 @metric
-def second_word_match(pred_sentence: str, gold_sentence: str) -> Union[bool,'NoneType']:
+def second_word_match(
+	pred_sentence: str, 
+	gold_sentence: str
+) -> Union[bool,'NoneType']:
+	'''Do the second words of each sentence match? If any sentence has only one word, returns None.'''
+	
 	pred_words = pred_sentence.split()
 	gold_words = gold_sentence.split()
 	
 	if len(pred_words) > 1 and len(gold_words) > 1:
 		return pred_words[1] == gold_words[1]
 
-def compute_metrics(metrics: List[Callable], pred_file: str, gold_file: str, prefix: str = None) -> Counter:
+def compute_metrics(
+	metrics: List[Callable], 
+	pred_file: str, 
+	gold_file: str,
+) -> Counter:
+	'''
+	Compute metrics on a prediction file and a gold file.
+	
+		params:
+			metrics (List[Callable]): a list of metrics functions to run on the passed files.
+									  (these are defined above in this file).
+			pred_file (str)			: a file containing sentences predicted by the model.
+			gold_file (str)			: a file containing the target sentences.
+									  the pred_file and gold_file should have corresponding 
+									  sentences in the same order.
+		
+		returns:
+			props (Dict[str,float])	: a dictionary mapping the name of each metric to the
+									  proportion of sentences that pass that metric.
+	'''
+	def format_lines(lines: List[str]) -> List[str]:
+		'''
+		Format lines for comparison purposes.
+		Remove extra whitespace and add a space before punctuation to facilitate word-level comparisons.
+		
+			params:
+				lines (list[str]): a list of strings to format
+		'''
+		lines = [line.strip() for line in lines]
+		lines = [re.sub(r'(?<!\s)([\?\.,])', ' \\1', line) for line in lines]
+		lines = [re.sub(r'\s+', ' ', line) for line in lines]
+		
+		return lines
+	
 	with open(pred_file, 'r') as pred_f, open(gold_file, 'r') as gold_f:
-		pred_lines = pred_f.readlines()
-		gold_lines = gold_f.readlines()
+		pred_lines 	= pred_f.readlines()
+		gold_lines 	= gold_f.readlines()
 	
-	total 	= 0.0
-	correct = Counter()
-	for i in range(len(pred_lines)):
-		pred_line = pred_lines[i].strip()
-		
-		if gold_file.endswith('.json'):
-			gold_json = json.loads(gold_lines[i])
-			
-			if prefix is not None and gold_json['translation']['prefix'] != prefix:
-				continue
-			
-			gold_line 	= gold_json['translation']['tgt']
-			src_line 	= gold_json['translation']['src']
-			
-		else:
-			gold_line 	= gold_lines[i].strip().split('\t')[1]
-		
-		# add space before punctuation to facilitate word splitting
-		pred_line 		= re.sub(r'(?<!\s)([\?\.,])', ' \\1', pred_line)
-		
-		# remove extra spaces for comparison
-		pred_line 		= re.sub(r'\s+', ' ', pred_line)
-		total 			+= 1
-		
-		for metric in metrics:
-			correct[metric.__name__] += metric(pred_line, gold_line, src_line)
+	pred_lines = format_lines(pred_lines)
 	
-	for metric in metrics:
-		correct[metric.__name__] = correct[metric.__name__]/total
+	if gold_file.endswith('.json'):
+		gold_jsons 	= [json.loads(gold_line) for gold_line in gold_lines]
+		gold_lines 	= [gold_json['translation']['tgt'] for gold_json in gold_jsons]
+		src_lines 	= [gold_json['translation']['src'] for gold_json in gold_jsons]
+		src_lines 	= format_lines(src_lines)
+	else:
+		gold_lines 	= [gold_line.strip().split('\t')[1] for gold_line in gold_lines]
+		src_lines 	= None
 	
-	return correct
+	gold_lines		= format_lines(gold_lines)
+	
+	src_lang 		= None # placeholder
+	tgt_lang 		= None # placeholder
+	
+	props = {}
+	for m in metrics:
+		props[metric.__name__] 	= m(
+										pred_sentence=pred_lines,
+										gold_sentence=gold_lines,
+										src_sentence=src_lines,
+										src_lang=src_lang,
+										tgt_lang=tgt_lang
+								)
+	
+	return props
