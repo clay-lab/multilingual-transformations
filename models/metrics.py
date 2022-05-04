@@ -1,544 +1,212 @@
+import re
 import json
 
+from typing import *
+from inspect import signature
+from statistics import mean
 from collections import Counter
 
-# check if there is an exact match
-def exact_match(pred_sentence, gold_sentence, src_sentence):
-	return 1 if pred_sentence.lower() == gold_sentence.lower() else 0
+NEG_REGEXES = {
+	'en': re.compile('not'),
+	'de': re.compile('nicht'),
+	'tu': re.compile('(m(i|ı|u|ü)y)|(m(adı|edi))|(m(aya|eye))'),
+}
 
-# check if first NP matches
-def first_word(pred_sentence, gold_sentence, src_sentence):
-	pred_words = pred_sentence.split()
-	gold_words = gold_sentence.split()
-	return 1 if len(pred_words) > 0 and pred_words[0].lower() == gold_words[0].lower() else 0
+LOWERCASE = {
+	'en': lambda s: s.lower(),
+	'de': lambda s: s.lower(),
+	'tu': lambda s: s.replace('İ', 'i').replace('I', 'ı').lower(),
+}
 
-def second_word(pred_sentence, gold_sentence, src_sentence):
-	pred_words = pred_sentence.split()
-	gold_words = gold_sentence.split()
-	return 1 len(pred_words) > 1 and pred_words[1].lower() == gold_words[1].lower() else 0
-
-QUESTION_AUXILIARIES = set(["have", "haven't", "has", "hasn't", "hat", "haben", "ist", "sind", "kann", "k\xf6nnen"])
-
-def three_auxiliaries(pred_sentence, gold_sentence, src_sentence):
-	pred_words = pred_sentence.split()
-	aux_count = 0
-	for word in pred_words:
-		if word in QUESTION_AUXILIARIES:
-			aux_count += 1
+def metric(fun: Callable) -> Callable:
+	'''
+	Decorator to simplify the definition of vectorized metric 
+	functions that report mean accuracy on some measure.
 	
-	return 1 if aux_count > 2 else 0
-		return 1
-
-def delete_first_prepose_first(pred_sentence, gold_sentence, src_sentence):
-	pred_sentence.replace(",", " ,").replace("?", " ?").replace(".", " .").replace("	", " ")
-	pred_words = pred_sentence.split()
-	
-	if len(pred_words) < 0 or pred_words[0] not in QUESTION_AUXILIARIES:
-		return 0
-	
-	
-	pred_aux = []
-	for word in pred_words:
-			if word in QUESTION_AUXILIARIES:
-				pred_aux.append(word)
-	
-	if len(pred_aux) != 2:
-		return 0
-	
-	src_words = src_sentence.split()
-	src_aux = []
-	for word in src_words:
-			if word in QUESTION_AUXILIARIES:
-				src_aux.append(word)
-	
-	if pred_aux == src_aux:
-		return 1	
-	
-	return 0
-
-def prepose_first(pred_sentence, gold_sentence, src_sentence):
-	pred_sentence.replace(",", " ,").replace("?", " ?").replace(".", " .").replace("	", " ")
-	pred_words = pred_sentence.split()
-	
-	if len(pred_words) < 0 or pred_words[0] not in QUESTION_AUXILIARIES:
-		return 0
-	
-	pred_aux = []
-	for word in pred_words:
-			if word in QUESTION_AUXILIARIES:
-				pred_aux.append(word)
-	
-	src_words = src_sentence.split()
-	src_aux = []
-	for word in src_words:
-			if word in QUESTION_AUXILIARIES:
-				src_aux.append(word)
-	
-	if pred_aux[0] == src_aux[0]:
-		return 1
-	
-	return 0
-
-def delete_main_prepose_main(pred_sentence, gold_sentence, src_sentence):
-	pred_sentence.replace(",", " ,").replace("?", " ?").replace(".", " .").replace("	", " ")
-	pred_words = pred_sentence.split()
-	
-	if len(pred_words) < 0 or pred_words[0] not in QUESTION_AUXILIARIES:
-		return 0
-	
-	pred_aux = []
-	for word in pred_words:
-			if word in QUESTION_AUXILIARIES:
-				pred_aux.append(word)
-	
-	if len(pred_aux) != 2:
-		return 0
-	
-	gold_words = gold_sentence.split()
-	gold_aux = []
-	for word in gold_words:
-			if word in QUESTION_AUXILIARIES:
-				gold_aux.append(word)
-	
-	if pred_aux == gold_aux:
-		return 1
-	
-	return 0
-
-def delete_none_prepose_first(pred_sentence, gold_sentence, src_sentence):
-	pred_sentence.replace(",", " ,").replace("?", " ?").replace(".", " .").replace("	", " ")
-	pred_words = pred_sentence.split()
-	
-	if len(pred_words) < 0 or pred_words[0] not in QUESTION_AUXILIARIES:
-		return 0
-	
-	pred_aux = []
-	for word in pred_words:
-			if word in QUESTION_AUXILIARIES:
-				pred_aux.append(word)
-	
-	if len(pred_aux) != 3:
-		return 0
-	
-	src_words = src_sentence.split()
-	src_aux = []
-	for word in src_words:
-			if word in QUESTION_AUXILIARIES:
-				src_aux.append(word)
-	
-	src_aux = [src_aux[0]] + src_aux
-	
-	if pred_aux == src_aux:
-		return 1
-	
-	return 0
-
-def delete_none_prepose_main(pred_sentence, gold_sentence, src_sentence):
-	pred_sentence.replace(",", " ,").replace("?", " ?").replace(".", " .").replace("	", " ")
-	pred_words = pred_sentence.split()
-	
-	if len(pred_words) < 0 or pred_words[0] not in QUESTION_AUXILIARIES:
-		return 0
-	
-	pred_aux = []
-	for word in pred_words:
-			if word in QUESTION_AUXILIARIES:
-				pred_aux.append(word)
-	
-	if len(pred_aux) != 3:
-		return 0
-	
-	gold_words = gold_sentence.split()
-	gold_aux = []
-	for word in gold_words:
-			if word in QUESTION_AUXILIARIES:
-				gold_aux.append(word)
-	
-	gold_aux.append(gold_aux[0])
-	if pred_aux == gold_aux:
-		return 1
-	
-	return 0
-
-PASSIVE_AUXILIARIES = set(["was", "were", "wurde", "wurden"])
-
-# check if NP before passive verb matches
-def passive_first_np(pred_sentence, gold_sentence, src_sentence):
-	# remove comma
-	pred_sentence = pred_sentence.replace(",", "").replace("	", " ")
-	gold_sentence = gold_sentence.replace(",", "").replace("	", " ")
-	pred_words = pred_sentence.split()
-	gold_words = gold_sentence.split()
-	idx = -1
-	for i, word in enumerate(gold_words):
-		if word in PASSIVE_AUXILIARIES:
-			idx = i
-	
-	if idx > 0:
-		pred_first_np = " ".join(pred_words[0:idx]).lower()
-		gold_first_np = " ".join(gold_words[0:idx]).lower()
-		if pred_first_np == gold_first_np:
-			return 1
-	
-	return 0
-
-PASSIVE_PREPOSITIONS = set(["by", "von"])
-
-DETERMINERS = set(["die", "eine", "meine", "deine", "unsere", "ihre", "einige", "dem", "einem", "meinem", "deinem", "unserem", "ihrem", "der", "einer", "meiner", "deiner", "unserer", "ihrer", "einigen", "den", "meinen", "deinen", "unseren", "ihren", "the", "some", "her", "my", "your", "our"])
-
-# check if NP after passive verb matches
-def passive_second_np(pred_sentence, gold_sentence, src_sentence):
-	pred_sentence = pred_sentence.replace(",", "").replace("	", " ")
-	gold_sentence = gold_sentence.replace(",", "").replace("	", " ")
-	pred_words = pred_sentence.split()
-	gold_words = gold_sentence.split()
-	is_german = "von" in gold_words
-	
-	aux_idx_gold = -1
-	aux_idx_pred = -1
-	idx_gold = -1
-	idx_pred = -1
-	for i, word in enumerate(gold_words):
-		if word in PASSIVE_AUXILIARIES:
-			aux_idx_gold = i
-	
-	for i, word in enumerate(pred_words):
-		if word in PASSIVE_AUXILIARIES:
-			aux_idx_pred = i
-	
-	if aux_idx_gold > 0 and aux_idx_pred > 0:
-		if gold_words[aux_idx_gold + 1] in PASSIVE_PREPOSITIONS:
-			idx_gold = aux_idx_gold + 2
-		elif gold_words[aux_idx_gold + 2] in PASSIVE_PREPOSITIONS:
-			idx_gold = aux_idx_gold + 3
-		
-		for i, word in enumerate(pred_words[aux_idx_pred+1:]):
-			idx = i + aux_idx_pred + 1
-			if word in DETERMINERS:
-				idx_pred = idx
-				break
-		
-		if idx_pred > 0 and idx_gold > 0:
-			np_len = len(gold_words) - 1 - idx_gold
-			# German gold sentence will have the verb after the second NP
-			if is_german:
-				np_len = np_len - 1
+		params:
+			fun (Callable)			: a function that returns a value to be interpreted as a boolean
+							
+		returns:
+			metric_fun (Callable)	: a function that returns the mean of applying the original fun to each tuple
+									  of zipped arguments passed to it, with length 1 arguments repeated for each call.
+									  note that arguments unused by the function will be ignored to facilitate the construction
+									  of identical calls.
+	'''
+	def wrapper(*args: Tuple, **kwargs: Dict) -> float:
+		'''
+		Return the proportion of truthy responses from passing each tuple of zipped (kw)args to fun.
+		Non-list/tuple arguments are put in a list to facilitate this.
+		If an argument is of length 1, it is repeated out to the maximum length.
+		All arguments not of length 1 must have the same number of elements.
+				
+			params:
+				*args (tuple)	: passed to fun
+				**kwargs (dict) : passed to fun
 			
-			pred_second_np = " ".join(pred_words[idx_pred:idx_pred+np_len]).lower()
-			gold_second_np = " ".join(gold_words[idx_gold:idx_gold+np_len]).lower()
-			if gold_second_np == pred_second_np:
-				return 1
-	
-	return 0
-
-def passive_second_np_no_pp(pred_sentence, gold_sentence, src_sentence):
-	pred_sentence = pred_sentence.replace(",", "").replace("	", " ")
-	gold_sentence = gold_sentence.replace(",", "").replace("	", " ")
-	pred_words = pred_sentence.split()
-	gold_words = gold_sentence.split()
-	is_german = "von" in gold_words
-	
-	aux_idx_gold = -1
-	aux_idx_pred = -1
-	idx_gold = -1
-	idx_pred = -1
-	for i, word in enumerate(gold_words):
-		if word in PASSIVE_AUXILIARIES:
-			aux_idx_gold = i
-	
-	for i, word in enumerate(pred_words):
-		if word in PASSIVE_AUXILIARIES:
-			aux_idx_pred = i
-	
-	if aux_idx_gold > 0 and aux_idx_pred > 0:
-		if gold_words[aux_idx_gold + 1] in PASSIVE_PREPOSITIONS:
-			idx_gold = aux_idx_gold + 2
-		elif gold_words[aux_idx_gold + 2] in PASSIVE_PREPOSITIONS:
-			idx_gold = aux_idx_gold + 3
+			returns:
+				prop (float)	: the mean of the result of applying fun to each tuple of zipped args and kwargs,
+								  with None omitted. If every value is None, returns None
+		'''
+		# convert single elements to lists so we can iterate
+		args 	= [[arg] if not isinstance(arg,(list,tuple)) else arg for arg in args]
+		kwargs 	= {k : [v] if not isinstance(v,(list,tuple)) else v for k, v in kwargs.items()}
 		
-		for i, word in enumerate(pred_words[aux_idx_pred+1:]):
-			idx = i + aux_idx_pred + 1
-			if word in DETERMINERS:
-				idx_pred = idx
-				break
+		# check lengths to make sure we can pad if needed
+		args_lens 	= [len(arg) for arg in args]
+		kwargs_lens = [len(v) for v in kwargs.values()]
+		assert len(set(l for l in args_lens if not l == 1).union(set(l for l in kwargs_lens if not l == 1))) <= 1, 'All arguments must be a single value or have the same length!'
 		
-		if idx_pred and idx_gold > 0:
+		# pad len 1 arguments to support vectorization
+		maxlen 			= max([*args_lens, *kwargs_lens])
+		len_one_args 	= [i for i, l in enumerate(args_lens) if l == 1]
+		len_one_kwargs 	= {k: v for k, v in zip(kwargs.keys(), kwargs_lens) if v == 1}
+		
+		# we only need to pad if the max length isn't already 1
+		if maxlen != 1:
+			for i in len_one_args:
+				args[i] = args[i] * maxlen
 			
-			pred_second_np = " ".join(pred_words[idx_pred:idx_pred+2]).lower()
-			gold_second_np = " ".join(gold_words[idx_gold:idx_gold+2]).lower()
-			if gold_second_np == pred_second_np:
-				return 1
-	
-	return 0
-
-def move_second_noun(pred_sentence, gold_sentence, src_sentence):
-	pred_sentence = pred_sentence.replace(",", "").replace("	", " ")
-	src_sentence = src_sentence.replace(",", "").replace("	", " ")
-	pred_words = pred_sentence.split()
-	src_words = src_sentence.split()
-	
-	second_noun = None
-	for i, word in enumerate(src_words):
-		if i == 0:
-			continue
-		if word in DETERMINERS:
-			second_noun = src_words[i+1]
-			break
-	
-	if second_noun is None:
-		return 0
-	
-	if pred_words[1] == second_noun:
-		return 1
-	
-	return 0
-
-def passive_aux_present(pred_sentence, gold_sentence, src_sentence):
-	pred_words = pred_sentence.split()
-	for i, word in enumerate(pred_words):
-		if word in PASSIVE_AUXILIARIES:
-			return 1
-	
-	return 0
-
-DETERMINER_EQUIVALENCIES = {
-	# Singular
-	"der": ["der", "dem", "den"],
-	"dem": ["der", "dem", "den"],
-	"den": ["die", "der", "dem", "den"], #includes plural
-	"ein": ["ein", "einem", "einen"],
-	"einem": ["ein", "einem", "einen"],
-	"einen": ["ein", "einem", "einen"],
-	"mein": ["mein", "meinem", "meinen"],
-	"meinem": ["mein", "meinem", "meinen"],
-	"meinen": ["mein", "meine", "meinem", "meinen"], #includes plural
-	"dein": ["dein", "deinem", "deinen"],
-	"deinem": ["dein", "deinem", "deinen"],
-	"deinen": ["dein", "deine", "deinem", "deinen"], #includes plural
-	"unser": ["unser", "unserem", "unseren"],
-	"unserem": ["unser", "unserem", "unseren"],
-	"unseren": ["unser", "unsere", "unserem", "unseren"], #includes plural
-	"ihr": ["ihr", "ihrem", "ihren"],
-	"ihrem": ["ihr", "ihrem", "ihren"],
-	"ihren": ["ihr", "ihre", "ihrem", "ihren"], #includes plural
-	# Plural
-	 "die": ["die", "den"],
-	 "einige": ["einige", "einigen"],
-	 "einigen": ["einige", "einigen"],
-	 "meine": ["meine", "meinen"],
-	 "deine": ["deine", "deinen"],
-	 "unsere": ["unsere", "unseren"],
-	 "ihre": ["ihre", "ihren"]
-}
-
-NOUN_EQUIVALENCES = {
- "Molch": ["Molch"],
- "Löwe": ["Löwe", "Löwen"],
- "Löwen": ["Löwe", "Löwen"],
- "Pfau": ["Pfau"],
- "Kater": ["Kater"],
- "Rabe": ["Rabe", "Raben"],
- "Raben": ["Rabe", "Raben"],
- "Salamander": ["Salamander", "Salamandern"], #includes plural
- "Dinosaurier": ["Dinosaurier", "Dinosauriern"], #includes plural
- "Papagei": ["Papagei"],
- "Geier": ["Geier", "Geiern"], #includes	plural
- "Wellensittich": ["Wellensittich"],
- "Esel": ["Esel", "Eseln"], #includes	plural
- "Hund": ["Hund"],
- "Ziesel": ["Ziesel", "Zieseln"], #includes	plural
-
- # plural
-	"Molche": ["Molche", "Molchen"],
-	"Molchen": ["Molche", "Molchen"],
-	"Löwen": ["Löwen"],
-	"Pfaue": ["Pfaue", "Pfauen"],
-	"Pfauen": ["Pfaue", "Pfauen"],
-	"Kater": ["Kater", "Katern"],
-	"Katern": ["Kater", "Katern"],
-	"Raben": ["Raben"],
-	"Salamandern": ["Salamander", "Salamandern"],
-	"Dinosauriern": ["Dinosaurier", "Dinosauriern"],
-	"Papageie": ["Papageie", "Papageien"],
-	"Papageien": ["Papageie", "Papageien"],
-	"Geiern": ["Geier", "Geiern"],
-	"Wellensittiche": ["Wellensittiche", "Wellensittichen"],
-	"Wellensittichen": ["Wellensittiche", "Wellensittichen"],
-	"Eseln": ["Esel", "Eseln"],
-	"Hunde": ["Hunde", "Hunden"],
-	"Hunden": ["Hunde", "Hunden"],
-	"Zieseln": ["Ziesel", "Zieseln"]
-}
-
-# returns 1 if the correct noun has been moved to subject position
-# but the case marking on determiner or noun is incorrect
-def first_np_case_incorrect(pred_sentence, gold_sentence, src_sentence):
-	pred_sentence = pred_sentence.replace(",", "").replace("	", " ")
-	gold_sentence = gold_sentence.replace(",", "").replace("	", " ")
-	pred_words = pred_sentence.split()
-	gold_words = gold_sentence.split()
-	
-	if len(pred_words) > 1 and pred_words[0] in DETERMINER_EQUIVALENCIES and pred_words[1] in NOUN_EQUIVALENCES:
-			if pred_words[0] != gold_words[0] or pred_words[1] != gold_words[1]:
-					if pred_words[0] in DETERMINER_EQUIVALENCIES[gold_words[0]] and pred_words[1] in NOUN_EQUIVALENCES[gold_words[1]]:
-							return 1
-	
-	return 0
-
-# returns 1 if the correct noun has been moved to the PP
-# but the case marking on the determiner and/or noun is incorrect
-def second_np_case_incorrect(pred_sentence, gold_sentence, src_sentence):
-	pred_sentence = pred_sentence.replace(",", "").replace("	", " ")
-	gold_sentence = gold_sentence.replace(",", "").replace("	", " ")
-	pred_words = pred_sentence.split()
-	gold_words = gold_sentence.split()
-	
-	aux_idx_gold = -1
-	aux_idx_pred = -1
-	idx_gold = -1
-	idx_pred = -1
-	for i, word in enumerate(gold_words):
-		if word in PASSIVE_AUXILIARIES:
-			aux_idx_gold = i
-	
-	for i, word in enumerate(pred_words):
-		if word in PASSIVE_AUXILIARIES:
-			aux_idx_pred = i
-	
-	if aux_idx_gold > 0 and aux_idx_pred > 0:
-		if gold_words[aux_idx_gold + 1] in PASSIVE_PREPOSITIONS:
-			idx_gold = aux_idx_gold + 2
-		elif gold_words[aux_idx_gold + 2] in PASSIVE_PREPOSITIONS:
-			idx_gold = aux_idx_gold + 3
+			for k in len_one_kwargs:
+				kwargs[k] = kwargs[k] * maxlen
 		
-		for i, word in enumerate(pred_words[aux_idx_pred+1:]):
-			idx = i + aux_idx_pred + 1
-			if word in DETERMINERS:
-				idx_pred = idx
-				break
+		# in our implementation, we want to be able to pass the 
+		# same arguments in the same order to each metric for ease of use.
+		# but not every metric will have every argument defined for it. 
+		# this filters out arguments that are not used by the function,
+		# so they don't get passed to it.
+		sig 	= signature(fun)
+		names 	= [p.name for p in sig.parameters.values()]
+		kwnames = [name for name in names if name in kwargs.keys()]
 		
-		if idx_pred > 0 and idx_gold > 0 and idx_pred < len(pred_words) - 1:
-			gold_det = gold_words[idx_gold]
-			pred_det = pred_words[idx_pred]
-			gold_noun = gold_words[idx_gold + 1]
-			pred_noun = pred_words[idx_pred + 1]
-			if pred_det in DETERMINER_EQUIVALENCIES and pred_noun in NOUN_EQUIVALENCES:
-					if gold_det != pred_det or gold_noun != pred_noun:
-							if pred_det in DETERMINER_EQUIVALENCIES[gold_det] and pred_noun in NOUN_EQUIVALENCES[gold_noun]:
-								return 1
+		args 	= args[:min(len(names),len(args))]
+		kwargs 	= {k: v for k, v in kwargs.items() if k in kwnames}	
+		
+		# this zips over the args and kwargs
+		# by zipping over the args and the kwarg values
+		# and then repacking the kwargs values into a dictionary
+		# that gets unpacked and passed to the function
+		# it allows us to define metrics very flexibly, 
+		# since all we need to do is make sure that
+		# they return something that can be cast to boolean
+		# we also omit Nones from the mean
+		trues = [
+			bool(res) for res in 
+				[
+					fun(
+						*each_step_args[:len(args)], 
+						**dict(zip(
+							kwargs.keys(), 
+							each_step_args[len(args):]
+						))
+					)
+				 	for each_step_args in zip(*args, *kwargs.values())
+				]
+			if res is not None
+		]
+		
+		# if everything is none, return none; otherwise we can get the mean
+		prop_true = mean(trues) if trues else None
+		
+		return prop_true
 	
-	return 0
+	return_fun = wrapper
+	
+	# make some attributes of the returned function reflect its original definition for clarity, ...
+	return_fun.__name__ = fun.__name__
+	
+	# , ... except for the return type, which should match the new type 
+	# (the original type would be too misleading)
+	sig 		= signature(fun)
+	return_type = signature(wrapper).return_annotation
+	sig 		= sig.replace(return_annotation=return_type)
+	
+	return_fun.__signature__ = sig
+	
+	return return_fun
 
-def first_np_ignore_case(pred_sentence, gold_sentence, src_sentence):
-	pred_sentence = pred_sentence.replace(",", "").replace("	", " ")
-	gold_sentence = gold_sentence.replace(",", "").replace("	", " ")
+@metric
+def exact_match(pred_sentence: str, gold_sentence: str) -> bool:
+	
+	return pred_sentence == gold_sentence
+
+@metric
+def ignorecase_exact_match(pred_sentence: str, gold_sentence: str, tgt_lang: str) -> bool:
+	
+	return LOWERCASE[tgt_lang](pred_sentence) == LOWERCASE[tgt_lang](gold_sentence)
+
+@metric
+def replace_negation_exact_match(pred_sentence: str, gold_sentence: str, src_lang: str, tgt_lang: str) -> bool:
+	for lang in [src_lang, tgt_lang]:
+		pred_sentence 	= NEG_REGEXES[lang].sub('[NEG]', pred_sentence)
+		gold_sentence 	= NEG_REGEXES[lang].sub('[NEG]', gold_sentence)
+	
+	# ensure spaces around neg to account for language-specific behavior
+	# e.g., English "cannot" instead of "can not", Turkish negation is inside the word
+	pred_sentence 	= re.sub(r'(?<!\s)(\[NEG\])', ' \\1', pred_sentence)
+	pred_sentence 	= re.sub(r'(\[NEG\])(?!\s)', '\\1 ', pred_sentence)
+	
+	gold_sentence 	= re.sub(r'(?<!\s)(\[NEG\])', ' \\1', gold_sentence)
+	gold_sentence 	= re.sub(r'(\[NEG\])(?!\s)', '\\1 ', gold_sentence)
+	
+	return exact_match(pred_sentence, gold_sentence)
+
+@metric
+def src_lang_negation_in_prediction(pred_sentence: str, src_lang: str) -> re.Match:
+	
+	return NEG_REGEXES[src_lang].search(LOWERCASE[src_lang](pred_sentence))
+
+@metric
+def tgt_lang_negation_in_prediction(pred_sentence: str, tgt_lang: str) -> re.Match:
+	
+	return NEG_REGEXES[tgt_lang].search(LOWERCASE[tgt_lang](pred_sentence))
+
+@metric
+def first_word_match(pred_sentence: str, gold_sentence: str) -> bool:
 	pred_words = pred_sentence.split()
 	gold_words = gold_sentence.split()
-	idx = 2
-	
-	if idx > 0:
-		pred_first_np = " ".join(pred_words[0:idx]).lower()
-		gold_first_np = " ".join(gold_words[0:idx]).lower()
-		if pred_first_np == gold_first_np:
-			return 1
-	
-	# if it is not an exact match, check if it is a match if one ignores case
-	return first_np_case_incorrect(pred_sentence, gold_sentence, src_sentence)
+	return pred_words[0] == gold_words[0]
 
-VERB_PARTICIPLE_MAPPING = {
-	"unterhielt": "unterhalten",
-	"amüsierte": "amüsiert",
-	"nervte": "genervt",
-	"erfreute": "erfreut",
-	"verwirrte": "verwirrt",
-	"bewunderte": "bewundert",
-	"akzeptierte": "akzeptiert",
-	"bedauerte": "bedauert",
-	"tröstete": "getröstet",
-	"unterhielten": "unterhalten",
-	"amüsierten": "amüsiert",
-	"nervten": "genervt",
-	"erfreuten": "erfreut",
-	"verwirrten": "verwirrt",
-	"bewunderten": "bewundert",
-	"akzeptierten": "akzeptiert",
-	"bedauerten": "bedauert",
-	"trösteten": "getröstet"
-}
-
-def tense_reinflection(pred_sentence, gold_sentence, src_sentence):
-	pred_sentence = pred_sentence.replace(",", "").replace("	", " ")
-	src_sentence = src_sentence.replace(",", "").replace("	", " ")
+@metric
+def second_word_match(pred_sentence: str, gold_sentence: str) -> Union[bool,'NoneType']:
 	pred_words = pred_sentence.split()
-	src_words = src_sentence.split()
-	for word in src_words:
-		if word in VERB_PARTICIPLE_MAPPING:
-				if VERB_PARTICIPLE_MAPPING[word] in pred_words:
-						return 1
-				break
+	gold_words = gold_sentence.split()
 	
-	return 0
+	if len(pred_words) > 1 and len(gold_words) > 1:
+		return pred_words[1] == gold_words[1]
 
-def identity(pred_sentence, gold_sentence, src_sentence):
-	pred_sentence = pred_sentence.replace(",", "").replace("	", " ")
-	src_sentence = src_sentence.replace(",", "").replace("	", " ")
-	if pred_sentence.lower() == src_sentence.lower():
-			print(pred_sentence)
-			print(src_sentence)
-			print("IDENT")
-			print("---------")
-			return 1
-	
-	return 0
-
-METRIC_FUNCTIONS = {
-	"exact_match": exact_match,
-	"first_word": first_word,
-	"second_word": second_word,
-	"prepose_first": prepose_first,
-	"three_aux": three_auxiliaries,
-	"first_np": passive_first_np,
-	"second_np": passive_second_np,
-	"second_np_no_pp": passive_second_np_no_pp,
-	"passive_aux_present": passive_aux_present,
-	"move_second_noun": move_second_noun,
-	"identity": identity,
-	"delete_first_prepose_first": delete_first_prepose_first,
-	"delete_none_prepose_first": delete_none_prepose_first,
-	"delete_main_prepose_main": delete_main_prepose_main,
-	"delete_none_prepose_main": delete_none_prepose_main,
-	"first_np_ignore_case": first_np_ignore_case,
-	"first_np_case_incorrect": first_np_case_incorrect,
-	"second_np_case_incorrect": second_np_case_incorrect,
-	"tense_reinflection": tense_reinflection
-}
-
-def compute_metrics(metrics, pred_file, gold_file, prefix=None):
-	with open(pred_file, "r") as pred_f, open(gold_file) as gold_f:
+def compute_metrics(metrics: List[Callable], pred_file: str, gold_file: str, prefix: str = None) -> Counter:
+	with open(pred_file, 'r') as pred_f, open(gold_file, 'r') as gold_f:
 		pred_lines = pred_f.readlines()
 		gold_lines = gold_f.readlines()
-		
-	total = 0.0
+	
+	total 	= 0.0
 	correct = Counter()
 	for i in range(len(pred_lines)):
 		pred_line = pred_lines[i].strip()
-		if gold_file.endswith(".json"):
-			gold_json = json.loads(gold_lines[i])
-			if prefix is not None and gold_json["translation"]["prefix"] != prefix:
-					continue
-			gold_line = gold_json["translation"]["tgt"]
-			src_line = gold_json["translation"]["src"]
-		else:
-			gold_line = gold_lines[i].strip().split("\t")[1]
-		# add space before period/question mark/comma
-		pred_line = pred_line.replace("?", " ?").replace(".", " .").replace(",", " ,").replace("	", " ")
 		
-		total +=1
+		if gold_file.endswith('.json'):
+			gold_json = json.loads(gold_lines[i])
+			
+			if prefix is not None and gold_json['translation']['prefix'] != prefix:
+				continue
+			
+			gold_line 	= gold_json['translation']['tgt']
+			src_line 	= gold_json['translation']['src']
+			
+		else:
+			gold_line 	= gold_lines[i].strip().split('\t')[1]
+		
+		# add space before punctuation to facilitate word splitting
+		pred_line 		= re.sub(r'(?<!\s)([\?\.,])', ' \\1', pred_line)
+		
+		# remove extra spaces for comparison
+		pred_line 		= re.sub(r'\s+', ' ', pred_line)
+		total 			+= 1
 		
 		for metric in metrics:
-			correct[metric] += METRIC_FUNCTIONS[metric](pred_line, gold_line, src_line)
+			correct[metric.__name__] += metric(pred_line, gold_line, src_line)
 	
 	for metric in metrics:
-		correct[metric] = correct[metric] / total
+		correct[metric.__name__] = correct[metric.__name__]/total
 	
 	return correct

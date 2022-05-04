@@ -4,6 +4,7 @@ slurm-*.out
 results/
 models/*.txt
 models/*.pkl
+models/old/
 joblogs/
 outputs/
 outputs
