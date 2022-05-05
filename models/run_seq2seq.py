@@ -20,20 +20,23 @@ Fine-tuning the library models for sequence to sequence.
 """
 # You can also adapt this script on your own sequence to sequence task. Pointers for this are left as comments.
 
-import logging
 import os
 import re
 import sys
 import glob
 import torch
-from operator import itemgetter
-from dataclasses import dataclass, field
-from typing import Optional
+import logging
+import transformers
 
 import numpy as np
-from datasets import load_dataset, load_metric
+import pandas as pd
+import matplotlib.pyplot as plt
 
-import transformers
+from typing import Optional
+from metrics import compute_metrics
+from operator import itemgetter
+from dataclasses import dataclass, field
+from datasets import load_dataset, load_metric
 from transformers import (
 	AutoConfig,
 	AutoModelForSeq2SeqLM,
@@ -48,11 +51,6 @@ from transformers import (
 	set_seed,
 )
 from transformers.trainer_utils import is_main_process
-
-from pred_eval import evaluate_predictions
-from metrics import *
-
-import matplotlib.pyplot as plt
 
 logger = logging.getLogger(__name__)
 
@@ -577,15 +575,17 @@ def main():
 		
 		output_eval_file = os.path.join(training_args.output_dir, basename + ".eval_results_seq2seq.txt")
 		
-		first_acc, full_acc = evaluate_predictions(output_pred_file, data_args.validation_file)
+		metrics = compute_metrics(output_pred_file, data_args.validation_file)	
 		
 		if trainer.is_world_process_zero():
 			with open(output_eval_file, "w") as writer:
-				writer.write(f"Exact match accuracy: {full_acc}\n")
-				writer.write(f"First word accuracy: {first_acc}\n")
-	
+				for metric in metrics:
+					display_name = metric.replace('_', ' ')
+					display_name = display_name[0].upper() + display_name[1:]
+					writer.write(f"{display_name} accuracy: {metrics[metric]}\n")
 	
 	if data_args.do_learning_curve:
+		
 		basename = os.path.basename(data_args.validation_file).replace(".json.gz", "")
 
 		for path in glob.glob(os.path.join(training_args.output_dir, "checkpoint-*", "")):
@@ -623,32 +623,29 @@ def main():
 			
 			output_eval_file = os.path.join(path, basename + ".eval_results_seq2seq.txt")
 			
-			first_acc, full_acc = evaluate_predictions(output_pred_file, data_args.validation_file)
+			metrics = compute_metrics(output_pred_file, data_args.validation_file)
 			
-			it_res = re.match(".*checkpoint-([0-9]+)[/].*", path)
-			it = it_res.group(1)
+			it_res 	= re.match(".*checkpoint-([0-9]+)[/].*", path)
+			it 		= it_res.group(1)
 			
 			if trainer.is_world_process_zero():
 				with open(output_eval_file, "w") as writer:
-					writer.write("iteration,exact_match,first_word_accuracy\n")
-					writer.write(f"{it},{full_acc},{first_acc}\n")
+					writer.write(f"iteration,{",".join(list(metrics.keys()))}\n")
+					writer.write(f"{it},{",".join(list(metrics.values()))}\n")
 		
 		# plot learning curve
-		eval_triples = []
-		
-		for path in glob.glob(os.path.join(training_args.output_dir, "checkpoint-*", "")):
-			basename = os.path.basename(data_args.validation_file).replace(".json.gz", "")
-			eval_file = os.path.join(path, basename + ".eval_results_seq2seq.txt")
+		basename 	= os.path.basename(data_args.validation_file).replace(".json.gz", "")
+		eval_files 	= [
+			os.path.join(path, f"{basename}.eval_results_seq2seq.txt")
+			for path in glob.glob(os.path.join(training_args.output_dir, "checkpoint-*"))
+		]
 			
-			with open(eval_file, "r") as reader:
-				reader.readline()
-				parts = reader.readline().strip().split(",")
-				eval_triples.append((int(parts[0]), float(parts[1]), float(parts[2])))
+		eval_preds 	= pd.concat([pd.read_csv(eval_file) for eval_file in eval_files], ignore_index=True)
+		eval_preds 	= eval_preds.sort_values('iteration').reset_index(drop=True)
 		
-		eval_triples_s = sorted(eval_triples, key=itemgetter(0))
-		its, full_accs, first_accs = zip(*eval_triples_s)
-		plt.plot(its,full_accs, label="exact match")
-		plt.plot(its,first_accs, label="first word accuracy")
+		for c in [c for c in eval_preds.columns if not c == 'iteration']:
+			plt.plot(eval_preds.iteration, eval_preds[c], label=c.replace('_', ' '))
+		
 		plt.legend()
 		plt.savefig(os.path.join(training_args.output_dir, basename + ".learning_curve.png"))
 	
@@ -659,4 +656,5 @@ def _mp_fn(index):
 	main()
 
 if __name__ == "__main__":
+	
 	main()
