@@ -91,7 +91,7 @@ class metric():
 			self.results = [
 				(
 					(
-						*each_step_args[:len(args)],
+						tuple(each_step_args[:len(args)]),
 						dict(zip(
 							kwargs.keys(),
 							each_step_args[len(args):]
