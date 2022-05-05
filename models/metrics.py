@@ -25,12 +25,30 @@ LOWERCASE = {
 }
 
 class metric():
+	'''
+	A class to simplify the construction of useful metrics functions. Can be used as a function decorator.
+	When called, the result returned is the proportion of true vs. false results
+	from the function to each row of passed arguments (with Nones excluded).
+	It also stores the individual results with the passed arguments in metric.results,
+	as well as the total rows passed, the number of rows included in the results (i.e., excluding Nones),
+	the number of true points, the number of false points, the number of omitted (i.e., None) points,
+	the actual arguments passed, and the mean (which is the same as the proportiion returned).
 	
+	Use as follows:
+		
+		@metric
+		def m(x, y):
+			return x == y
+		
+		Now, you can call with 
+			m([1, 2, ...], [1, 1, ...])
+		to get the proportion of equal values at identical indices in each list.
+	'''
 	def __init__(self, fun: Callable) -> metric:
 		'''
 		Constructor to simplify the definition of vectorized metric 
 		functions that report mean accuracy on some measure.
-
+		
 			params:
 				fun (Callable)			: a function that returns a value to be interpreted as a boolean
 								
@@ -182,7 +200,7 @@ def ignorecase_exact_match(
 	gold_sentence: str, 
 	tgt_lang: str
 ) -> bool:
-	'''Do the passed sentences match when converted to lowercase?'''
+	'''Do the sentences match when converted to lowercase?'''
 	return LOWERCASE[tgt_lang](pred_sentence) == LOWERCASE[tgt_lang](gold_sentence)
 
 @metric
@@ -192,7 +210,7 @@ def replace_negation_exact_match(
 	trn_lang: str, 
 	tgt_lang: str
 ) -> bool:
-	'''Do the sentences match exactly when the neg words are replaced with identical values?'''
+	'''Do the sentences match when the neg words are replaced with identical values?'''
 	for lang in [trn_lang, tgt_lang]:
 		pred_sentence 	= NEG_REGEXES[lang].sub('[NEG]', pred_sentence)
 		gold_sentence 	= NEG_REGEXES[lang].sub('[NEG]', gold_sentence)
