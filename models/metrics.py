@@ -268,20 +268,20 @@ def second_word_match(
 		return pred_words[1] == gold_words[1]
 
 @metric
-def multiple_trn_lang_negations(
+def only_one_trn_lang_negations(
 	pred_sentence: str,
 	trn_lang: str
 ) -> int:
-	'''Is there > 1 training language negation in the sentence?'''
-	return len(NEG_REGEXES[trn_lang].findall(LOWERCASE[trn_lang](pred_sentence))) > 1
+	'''Is there <= 1 training language negation in the sentence?'''
+	return len(NEG_REGEXES[trn_lang].findall(LOWERCASE[trn_lang](pred_sentence))) <= 1
 
 @metric
-def multiple_tgt_lang_negations(
+def only_one_tgt_lang_negations(
 	pred_sentence: str,
 	tgt_lang: str
 ) -> int:
-	'''Is there > 1 target language negation in the sentence?'''
-	return len(NEG_REGEXES[tgt_lang].findall(LOWERCASE[tgt_lang](pred_sentence))) > 1
+	'''Is there <= 1 target language negation in the sentence?'''
+	return len(NEG_REGEXES[tgt_lang].findall(LOWERCASE[tgt_lang](pred_sentence))) <= 1
 
 # this gets a list of all the metrics functions defined 
 # in this file so we can use it as a default argument
