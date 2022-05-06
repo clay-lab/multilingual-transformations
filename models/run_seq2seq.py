@@ -33,10 +33,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from typing import Optional
-from metrics import compute_metrics
+from metrics import compute_metrics as run_metrics # workaround since hf already defines a function with this name
 from operator import itemgetter
-from dataclasses import dataclass, field
 from datasets import load_dataset, load_metric
+from dataclasses import dataclass, field
 from transformers import (
 	AutoConfig,
 	AutoModelForSeq2SeqLM,
@@ -533,7 +533,7 @@ def main():
 		result["gen_len"] = np.mean(prediction_lens)
 		
 		return result
-
+	
 	# Initialize our Trainer
 	trainer = Seq2SeqTrainer(
 		model=model,
@@ -580,7 +580,7 @@ def main():
 					for pred in tokenizer.batch_decode(predictions.predictions, skip_special_tokens=True):
 						writer.write(pred + "\n")
 			
-		metrics = compute_metrics(output_pred_file, data_args.validation_file)	
+		metrics = run_metrics(output_pred_file, data_args.validation_file)	
 		
 		if trainer.is_world_process_zero():
 			output_eval_file = os.path.join(training_args.output_dir, basename + ".eval_results_seq2seq.txt")
@@ -625,7 +625,7 @@ def main():
 						for pred in tokenizer.batch_decode(predictions.predictions, skip_special_tokens=True):
 							writer.write(pred + "\n")
 			
-			metrics = compute_metrics(output_pred_file, data_args.validation_file)
+			metrics = run_metrics(output_pred_file, data_args.validation_file)
 			
 			it_res 	= re.match(".*checkpoint-([0-9]+)[/].*", path)
 			it 		= it_res.group(1)
