@@ -271,20 +271,44 @@ def tgt_lang_negation_in_prediction(
 # 		return pred_words[1] == gold_words[1]
 
 @metric
-def only_one_trn_lang_negation(
+def one_trn_lang_negation(
 	pred_sentence: str,
 	trn_lang: str
 ) -> bool:
-	'''Is there <= 1 training language negation in the sentence?'''
-	return len(NEG_REGEXES[trn_lang].findall(LOWERCASE[trn_lang](pred_sentence))) <= 1
+	'''Is there exactly 1 training language negation in the sentence?'''
+	return len(NEG_REGEXES[trn_lang].findall(LOWERCASE[trn_lang](pred_sentence))) == 1
 
 @metric
-def only_one_tgt_lang_negation(
+def one_tgt_lang_negation(
 	pred_sentence: str,
 	tgt_lang: str
 ) -> bool:
-	'''Is there <= 1 target language negation in the sentence?'''
-	return len(NEG_REGEXES[tgt_lang].findall(LOWERCASE[tgt_lang](pred_sentence))) <= 1
+	'''Is there exactly 1 target language negation in the sentence?'''
+	return len(NEG_REGEXES[tgt_lang].findall(LOWERCASE[tgt_lang](pred_sentence))) == 1
+
+@metric
+def one_negation(
+	pred_sentence: str,
+	trn_lang: str,
+	tgt_lang: str
+) -> bool:
+	'''Is there exactly one negation in the sentence?'''
+	for lang in [trn_lang, tgt_lang]
+		pred_sentence 	= NEG_REGEXES[lang].sub('[NEG]', pred_sentence)
+	
+	return len(re.findall(r'\[NEG\]', pred_sentence)) == 1
+
+@metric
+def zero_negation(
+	pred_sentence: str,
+	trn_lang: str,
+	tgt_lang: str
+) -> bool:
+	'''Is there any negation in the sentence?'''
+	for lang in [trn_lang, tgt_lang]:
+		pred_sentence = NEG_REGEXES[lang].sub('[NEG]', pred_sentence)
+	
+	return len(re.findall(r'\[NEG\]', pred_sentence)) == 0
 
 # this gets a list of all the metrics functions defined 
 # in this file so we can use it as a default argument
