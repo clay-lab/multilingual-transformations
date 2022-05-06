@@ -250,7 +250,10 @@ def first_word_match(
 	'''Does the first word of each sentence match?'''
 	pred_words = pred_sentence.split()
 	gold_words = gold_sentence.split()
-	return pred_words[0] == gold_words[0]
+	
+	# this accounts for an instance when the model has predicted no text
+	if pred_words and gold_words:
+		return pred_words[0] == gold_words[0]
 
 @metric
 def second_word_match(
