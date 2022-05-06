@@ -649,7 +649,9 @@ def main():
 			plt.plot(eval_preds.iteration, eval_preds[c], label=c.replace('_', ' '))
 		
 		plt.legend()
-		plt.savefig(os.path.join(training_args.output_dir, basename + ".learning_curve.png"))
+		fig = matplotlib.pyplot.gcf()
+		fig.set_size_inches(8, 6)
+		fig.savefig(os.path.join(training_args.output_dir, basename + ".learning_curve.pdf"))
 	
 	return results
 
