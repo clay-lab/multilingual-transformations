@@ -634,7 +634,7 @@ def main():
 				output_eval_file = os.path.join(path, basename + ".eval_results_seq2seq.txt")
 				with open(output_eval_file, "w") as writer:
 					writer.write(f"iteration,{','.join(list(metrics.keys()))}\n")
-					writer.write(f"{it},{','.join(list(metrics.values()))}\n")
+					writer.write(f"{it},{','.join([str(f) for f in list(metrics.values())])}\n")
 		
 		# plot learning curve
 		basename 	= os.path.basename(data_args.validation_file).replace(".json.gz", "")
