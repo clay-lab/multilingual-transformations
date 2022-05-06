@@ -637,7 +637,6 @@ def main():
 					writer.write(f"{it},{','.join([str(f) for f in list(metrics.values())])}\n")
 		
 		# plot learning curve
-		basename 	= os.path.basename(data_args.validation_file).replace(".json.gz", "")
 		eval_files 	= [
 			os.path.join(path, f"{basename}.eval_results_seq2seq.txt")
 			for path in glob.glob(os.path.join(training_args.output_dir, "checkpoint-*"))
