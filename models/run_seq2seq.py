@@ -324,10 +324,10 @@ def main():
 		data_files = {}
 		for split, file in zip(['train', 'validation'], [data_args.train_file, data_args.validation_file]):
 			if file is not None:
-				data_files[name] 	= file
+				data_files[split] 	= file
 				extension 			= file.split(".")[-1]
 				if extension == 'gz':
-					extension = file.split('.')[-2]
+					extension 		= file.split('.')[-2]
 			
 		datasets = load_dataset(extension, data_files=data_files)
 	
