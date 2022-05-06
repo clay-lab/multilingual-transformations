@@ -651,6 +651,7 @@ def main():
 		plt.legend(prop={'size': 8})
 		fig = plt.gcf()
 		fig.set_size_inches(8, 6)
+		print(training_args.output_dir)
 		title = os.path.split(training_args.output_dir)[-1]
 		print(title)
 		title = re.findall('(neg-.*)-.*?$', title)
