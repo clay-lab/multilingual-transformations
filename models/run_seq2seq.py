@@ -400,12 +400,12 @@ def main():
 											['source_lang', 	'target_lang']
 										):
 			if isinstance(tokenizer, MULTILINGUAL_TOKENIZERS):
-				if arg in data_args and data_args[arg]:
-					setattr(tokenizer, tokenizer_attr, data_args[arg])
+				if arg in data_args and getattr(data_args, arg):
+					setattr(tokenizer, tokenizer_attr, getattr(data_args, arg))
 				elif data_args.prefix_from_file:
 					setattr(tokenizer, tokenizer_attr, "en_XX") # placeholder
-			elif data_args[lang] is not None:
-				setattr(tokenizer, tokenizer_attr, data_args[lang])
+			elif getattr(data_args, lang) is not None:
+				setattr(tokenizer, tokenizer_attr, getattr(data_args, lang))
 	
 	# To serialize preprocess_function below, each of those four variables needs to be defined (even if we won't use
 	# them all).
