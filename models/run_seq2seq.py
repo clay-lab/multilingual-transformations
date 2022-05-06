@@ -652,7 +652,10 @@ def main():
 		fig = plt.gcf()
 		fig.set_size_inches(8, 6)
 		title = os.path.split(training_args.output_dir)[-1]
-		title = re.findall('(neg-.*)-.*?$', title)[0].replace('-', '_')
+		print(title)
+		title = re.findall('(neg-.*)-.*?$', title)
+		print(title)
+		title = title[0].replace('-', '_')
 		title = f'training: {title}, test: {re.findall("(neg_.*)_.*?", basename)[0]}'
 		fig.suptitle(title)
 		fig.savefig(os.path.join(training_args.output_dir, basename + ".learning_curve.pdf"))
