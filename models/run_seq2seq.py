@@ -394,14 +394,18 @@ def main():
 	# For translation we set the codes of our source and target languages (only useful for mBART, the others will
 	# ignore those attributes).
 	if data_args.task.startswith("translation"):
-		for tokenizer_attr, arg, lang in zip(['src_lang', 'tgt_lang'], ['source_prefix', 'target_prefix'], ['source_lang', 'target_lang']):
+		for tokenizer_attr, arg, lang in zip(
+											['src_lang', 		'tgt_lang'], 
+											['source_prefix', 	'target_prefix'], 
+											['source_lang', 	'target_lang']
+										):
 			if isinstance(tokenizer, MULTILINGUAL_TOKENIZERS):
 				if arg in data_args and data_args[arg]:
-					getattr(tokenizer, tokenizer_attr) = data_args[arg]
+					setattr(tokenizer, tokenizer_attr, data_args[arg])
 				elif data_args.prefix_from_file:
-					getattr(tokenizer, tokenizer_attr) = "en_XX" # placeholder
+					setattr(tokenizer, tokenizer_attr, "en_XX") # placeholder
 			elif data_args[lang] is not None:
-				getattr(tokenizer, tokenizer_attr) = data_args[lang]
+				setattr(tokenizer, tokenizer_attr, data_args[lang])
 	
 	# To serialize preprocess_function below, each of those four variables needs to be defined (even if we won't use
 	# them all).
