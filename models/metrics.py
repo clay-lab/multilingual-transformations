@@ -271,7 +271,7 @@ def second_word_match(
 		return pred_words[1] == gold_words[1]
 
 @metric
-def only_one_trn_lang_negations(
+def only_one_trn_lang_negation(
 	pred_sentence: str,
 	trn_lang: str
 ) -> int:
@@ -279,7 +279,7 @@ def only_one_trn_lang_negations(
 	return len(NEG_REGEXES[trn_lang].findall(LOWERCASE[trn_lang](pred_sentence))) <= 1
 
 @metric
-def only_one_tgt_lang_negations(
+def only_one_tgt_lang_negation(
 	pred_sentence: str,
 	tgt_lang: str
 ) -> int:

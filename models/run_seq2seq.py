@@ -648,9 +648,13 @@ def main():
 		for c in [c for c in eval_preds.columns if not c == 'iteration']:
 			plt.plot(eval_preds.iteration, eval_preds[c], label=c.replace('_', ' '))
 		
-		plt.legend()
+		plt.legend(prop={'size': 8})
 		fig = plt.gcf()
 		fig.set_size_inches(8, 6)
+		title = os.path.split(training_args.output_dir)[-1]
+		title = re.findall('(neg-(.*)-.*?$', title)[0].replace('-', '_')
+		title = f'training: {title}, test: {re.findall("(neg_.*)_.*?", basename)}'
+		fig.suptitle(title)
 		fig.savefig(os.path.join(training_args.output_dir, basename + ".learning_curve.pdf"))
 	
 	return results
