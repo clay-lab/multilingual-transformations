@@ -44,7 +44,7 @@ class metric():
 			m([1, 2, ...], [1, 1, ...])
 		to get the proportion of equal values at identical indices in each list.
 	'''
-	def __init__(self, fun: Callable) -> metric:
+	def __init__(self, fun: Callable) -> 'metric':
 		'''
 		Constructor to simplify the definition of vectorized metric 
 		functions that report mean accuracy on some measure.
