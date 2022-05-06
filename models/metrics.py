@@ -355,9 +355,9 @@ def compute_metrics(
 	gold_lines		= format_lines(gold_lines)
 	
 	if neg_only and gold_file.endswith('.json'):
-		gold_line_indices = [i for i, line in gold_lines if line['prefix'] == 'neg']
-		gold_lines = [line for i, line in gold_lines if i in gold_line_indices]
-		pred_lines = [line for i, line in pred_lines if i in gold_line_indices]
+		gold_line_indices = [i for i, line in enumerate(gold_lines) if line['prefix'] == 'neg']
+		gold_lines = [line for i, line in enumerate(gold_lines) if i in gold_line_indices]
+		pred_lines = [line for i, line in enumerate(pred_lines) if i in gold_line_indices]
 	
 	trn_lang 		= re.findall(r'outputs[/\\](.*?)[/\\$]', pred_file)[0]
 	trn_lang 		= re.findall(r'neg-(.*?)-', trn_lang)[0]
