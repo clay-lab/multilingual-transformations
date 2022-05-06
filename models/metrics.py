@@ -156,7 +156,7 @@ class metric():
 		
 		return_fun.__signature__ 	= sig
 		self.signature 				= sig
-		
+		self._original_fun 			= fun
 		self.fun 					= return_fun
 		self.total_points			= 0
 		self.included_points 		= 0
