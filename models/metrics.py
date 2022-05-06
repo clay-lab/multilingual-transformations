@@ -13,8 +13,8 @@ from statistics import mean
 # language-specific regexes to match neg word(s)
 NEG_REGEXES = {
 	'en': re.compile('not'),
-	'de': re.compile('nicht'),
-	'tu': re.compile('(m(i|ı|u|ü)y)|(m(adı|edi))|(m(aya|eye))'),
+	'de': re.compile('(nicht|kein)'),
+	'tu': re.compile('(m(i|ı|u|ü)y|m(adı|edi)|m(aya|eye))'),
 }
 
 # language-specific lowercase functions
