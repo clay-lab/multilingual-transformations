@@ -106,7 +106,6 @@ class metric():
 			# it allows us to define metrics very flexibly, 
 			# since all we need to do is make sure that
 			# they return something that can be cast to boolean
-			# we also omit Nones from the mean
 			self.results = [
 				(
 					(
@@ -129,6 +128,7 @@ class metric():
 			
 			self.total_points 		= len(self.results)
 			
+			# we omit Nones from the mean
 			filtered_results 		= [bool(res[-1]) for res in self.results if res is not None]
 			
 			self.included_points 	= len(filtered_results)
