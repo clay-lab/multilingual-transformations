@@ -242,39 +242,39 @@ def tgt_lang_negation_in_prediction(
 	'''Is the neg word from the target language in the sentence?'''
 	return NEG_REGEXES[tgt_lang].search(LOWERCASE[tgt_lang](pred_sentence))
 
-@metric
-def first_word_match(
-	pred_sentence: str, 
-	gold_sentence: str
-) -> bool:
-	'''Does the first word of each sentence match?'''
-	pred_words = pred_sentence.split()
-	gold_words = gold_sentence.split()
+# @metric
+# def first_word_match(
+# 	pred_sentence: str, 
+# 	gold_sentence: str
+# ) -> Union[bool,'NoneType']:
+# 	'''Does the first word of each sentence match? If either sentence is empty, returns None.'''
+# 	pred_words = pred_sentence.split()
+# 	gold_words = gold_sentence.split()
 	
-	# this accounts for an instance when the model has predicted no text
-	if pred_words and gold_words:
-		return pred_words[0] == gold_words[0]
+# 	# this accounts for an instance when the model has predicted no text
+# 	if pred_words and gold_words:
+# 		return pred_words[0] == gold_words[0]
 
-@metric
-def second_word_match(
-	pred_sentence: str, 
-	gold_sentence: str
-) -> Union[bool,'NoneType']:
-	'''
-	Do the second words of each sentence match? 
-	If either sentence has only one word, returns None.
-	'''
-	pred_words = pred_sentence.split()
-	gold_words = gold_sentence.split()
+# @metric
+# def second_word_match(
+# 	pred_sentence: str, 
+# 	gold_sentence: str
+# ) -> Union[bool,'NoneType']:
+# 	'''
+# 	Do the second words of each sentence match? 
+# 	If either sentence has only one word, returns None.
+# 	'''
+# 	pred_words = pred_sentence.split()
+# 	gold_words = gold_sentence.split()
 	
-	if len(pred_words) > 1 and len(gold_words) > 1:
-		return pred_words[1] == gold_words[1]
+# 	if len(pred_words) > 1 and len(gold_words) > 1:
+# 		return pred_words[1] == gold_words[1]
 
 @metric
 def only_one_trn_lang_negation(
 	pred_sentence: str,
 	trn_lang: str
-) -> int:
+) -> bool:
 	'''Is there <= 1 training language negation in the sentence?'''
 	return len(NEG_REGEXES[trn_lang].findall(LOWERCASE[trn_lang](pred_sentence))) <= 1
 
@@ -282,19 +282,24 @@ def only_one_trn_lang_negation(
 def only_one_tgt_lang_negation(
 	pred_sentence: str,
 	tgt_lang: str
-) -> int:
+) -> bool:
 	'''Is there <= 1 target language negation in the sentence?'''
 	return len(NEG_REGEXES[tgt_lang].findall(LOWERCASE[tgt_lang](pred_sentence))) <= 1
 
 # this gets a list of all the metrics functions defined 
 # in this file so we can use it as a default argument
 # for compute_metrics below
-all_metrics = [eval(name) for name, obj in getmembers(sys.modules[__name__]) if isinstance(obj, metric)]
+all_metrics = [
+	eval(name) 
+	for name, obj in getmembers(sys.modules[__name__]) 
+		if isinstance(obj, metric)
+]
 
 def compute_metrics(
 	pred_file: str, 
 	gold_file: str,
 	metrics: List[metric] = all_metrics, 
+	neg_only: bool = True,
 ) -> Dict:
 	'''
 	Computes metrics on a prediction file and a gold file.
@@ -348,6 +353,11 @@ def compute_metrics(
 		src_lines 	= None
 	
 	gold_lines		= format_lines(gold_lines)
+	
+	if neg_only and gold_file.endswith('.json'):
+		gold_line_indices = [i for i, line in gold_lines if line['prefix'] == 'neg']
+		gold_lines = [line for i, line in gold_lines if i in gold_line_indices]
+		pred_lines = [line for i, line in pred_lines if i in gold_line_indices]
 	
 	trn_lang 		= re.findall(r'outputs[/\\](.*?)[/\\$]', pred_file)[0]
 	trn_lang 		= re.findall(r'neg-(.*?)-', trn_lang)[0]
