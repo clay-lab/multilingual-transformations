@@ -569,24 +569,26 @@ def main():
 		logger.info("*** Evaluate ***")
 		
 		basename = os.path.basename(data_args.validation_file).replace(".json.gz", "")
-		
-		predictions = trainer.predict(test_dataset=eval_dataset, max_length=100)
 		output_pred_file = os.path.join(training_args.output_dir, basename + ".eval_preds_seq2seq.txt")
-		if trainer.is_world_process_zero():
-			with open(output_pred_file, "w") as writer:
-				for pred in tokenizer.batch_decode(predictions.predictions, skip_special_tokens=True):
-					writer.write(pred + "\n")
 		
-		output_eval_file = os.path.join(training_args.output_dir, basename + ".eval_results_seq2seq.txt")
-		
+		# do not re-compute predictions if they already exist
+		if not os.path.exists(output_pred_file):
+			predictions = trainer.predict(test_dataset=eval_dataset, max_length=100)
+			
+			if trainer.is_world_process_zero():
+				with open(output_pred_file, "w") as writer:
+					for pred in tokenizer.batch_decode(predictions.predictions, skip_special_tokens=True):
+						writer.write(pred + "\n")
+			
 		metrics = compute_metrics(output_pred_file, data_args.validation_file)	
 		
 		if trainer.is_world_process_zero():
+			output_eval_file = os.path.join(training_args.output_dir, basename + ".eval_results_seq2seq.txt")
 			with open(output_eval_file, "w") as writer:
-				for metric in metrics:
-					display_name = metric.replace('_', ' ')
+				for m in metrics:
+					display_name = m.replace('_', ' ')
 					display_name = display_name[0].upper() + display_name[1:]
-					writer.write(f"{display_name} accuracy: {metrics[metric]}\n")
+					writer.write(f"{display_name} accuracy: {metrics[m]}\n")
 	
 	if data_args.do_learning_curve:
 		
@@ -596,36 +598,32 @@ def main():
 			output_pred_file = os.path.join(path, basename + ".eval_preds_seq2seq.txt")
 
 			# do not re-compute predictions if they already exist
-			if os.path.exists(output_pred_file):
-				continue
-			
-			model = AutoModelForSeq2SeqLM.from_pretrained(
-				path,
-				from_tf=bool(".ckpt" in model_args.model_name_or_path),
-				config=config,
-				cache_dir=model_args.cache_dir,
-				revision=model_args.model_revision,
-				use_auth_token=True if model_args.use_auth_token else None,
-			)
-			
-			trainer = Seq2SeqTrainer(
-				model=model,
-				args=training_args,
-				train_dataset=train_dataset if training_args.do_train else None,
-				eval_dataset=eval_dataset if training_args.do_eval else None,
-				tokenizer=tokenizer,
-				data_collator=data_collator,
-				compute_metrics=None,
-			)
-			
-			predictions = trainer.predict(test_dataset=eval_dataset, max_length=100)
-			
-			if trainer.is_world_process_zero():
-				with open(output_pred_file, "w") as writer:
-					for pred in tokenizer.batch_decode(predictions.predictions, skip_special_tokens=True):
-						writer.write(pred + "\n")
-			
-			output_eval_file = os.path.join(path, basename + ".eval_results_seq2seq.txt")
+			if not os.path.exists(output_pred_file):
+				model = AutoModelForSeq2SeqLM.from_pretrained(
+					path,
+					from_tf=bool(".ckpt" in model_args.model_name_or_path),
+					config=config,
+					cache_dir=model_args.cache_dir,
+					revision=model_args.model_revision,
+					use_auth_token=True if model_args.use_auth_token else None,
+				)
+				
+				trainer = Seq2SeqTrainer(
+					model=model,
+					args=training_args,
+					train_dataset=train_dataset if training_args.do_train else None,
+					eval_dataset=eval_dataset if training_args.do_eval else None,
+					tokenizer=tokenizer,
+					data_collator=data_collator,
+					compute_metrics=None,
+				)
+				
+				predictions = trainer.predict(test_dataset=eval_dataset, max_length=100)
+				
+				if trainer.is_world_process_zero():
+					with open(output_pred_file, "w") as writer:
+						for pred in tokenizer.batch_decode(predictions.predictions, skip_special_tokens=True):
+							writer.write(pred + "\n")
 			
 			metrics = compute_metrics(output_pred_file, data_args.validation_file)
 			
@@ -633,6 +631,7 @@ def main():
 			it 		= it_res.group(1)
 			
 			if trainer.is_world_process_zero():
+				output_eval_file = os.path.join(path, basename + ".eval_results_seq2seq.txt")
 				with open(output_eval_file, "w") as writer:
 					writer.write(f"iteration,{','.join(list(metrics.keys()))}\n")
 					writer.write(f"{it},{','.join(list(metrics.values()))}\n")
