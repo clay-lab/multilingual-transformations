@@ -4,6 +4,7 @@ import sys
 import gzip
 import json
 
+from tqdm import tqdm
 from typing import *
 from inspect import signature, getmembers
 from itertools import cycle
