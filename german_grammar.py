@@ -1,6 +1,6 @@
 # code adapted from Bob Frank's grammars.py
-from nltk import CFG, Tree, PCFG
-from nltk import nonterminals, Nonterminal, Production
+from nltk import Tree, PCFG
+from nltk import nonterminals
 
 import random
 from typing import *

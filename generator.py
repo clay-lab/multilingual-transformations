@@ -173,6 +173,8 @@ def get_pos_labels(t: Tree) -> List[str]:
 	for child in t:
 		if isinstance(child, Tree) and not isinstance(child[0], str):
 			labels.extend(get_pos_labels(child))
+		elif isinstance(child, str):
+			pass
 		elif not isinstance(child.label(), str):
 			labels.append(child.label().symbol())
 		else:
@@ -231,8 +233,8 @@ def get_english_example_metadata(
 					   - definiteness of main clause subject/object (subj_def, obj_def)
 					   - number of main clause subject/object (subj_num, obj_num)
 					   - the identity of the main auxiliary (main_aux)
-					   - number of adverbial clauses before the main clause
-					   - number of adverbial clauses after the main clause
+					   - how many adverbial clauses before the main clause
+					   - how many adverbial clauses after the main clause
 					   - the number of adverbial clauses
 					   - the PoS sequence of the source and target
 	"""
@@ -361,9 +363,10 @@ def get_german_example_metadata(
 					   - number of main clause subject/object (subj_num, obj_num)
 					   - the identity of the main auxiliary (main_aux)
 					   - whether the main clause is subject initial or not
-					   - whether there is an adverbial clause before the main clause
-					   - whether there is an adverbial clause after the main clause
+					   - how many adverbial clauses before the main clause
+					   - how many adverbial clauses after the main clause
 					   - the number of adverbial clauses
+					   - pos tags for source and target
 	"""
 	source = source.copy(deep=True)
 	target = target.copy(deep=True)
@@ -470,6 +473,19 @@ def get_german_example_metadata(
 	
 	return metadata
 
+def get_turkish_pos_seq(t: Tree) -> str:
+	'''Remove unwanted info from Turkish pos tags for comparison purposes and return as a string.'''
+	pos_seq = get_pos_labels(t)
+	pos_seq = [l for tag in [pos_tag.split() for pos_tag in pos_seq] for l in tag]
+	pos_seq = [pos_tag.split('_',1)[0] for pos_tag in pos_seq]
+	pos_seq = [re.sub('P$', '', pos_tag) for pos_tag in pos_seq]
+	pos_seq = [re.sub('(Tense|Person[1-3])', '', pos_tag) for pos_tag in pos_seq]
+	pos_seq = [l for tag in [pos_tag.split() for pos_tag in pos_seq] for l in tag]
+	
+	pos_seq = '[' + '] ['.join([pos_tag for pos_tag in pos_seq if pos_tag]) + ']'
+	
+	return pos_seq
+
 def get_turkish_example_metadata(
 	source: Tree,
 	pfx: str,
@@ -485,16 +501,52 @@ def get_turkish_example_metadata(
 					   - definiteness of main clause subject/object (subj_def, obj_def)
 					   - number of main clause subject/object (subj_num, obj_num)
 					   - the identity of the main auxiliary (main_aux)
-					   - whether there is an adverbial clause before the main clause
-					   - whether there is an adverbial clause after the main clause
+					   - how many adverbial clauses before the main clause
+					   - how many adverbial clause after the main clause
 					   - the number of adverbial clauses
-	(not all of these are currently in the turkish grammar)
+					   - pos tags
+	(not all of these are currently in the turkish grammar, so we'll use a default value)
 	"""
 	source = source.copy(deep=True)
 	target = target.copy(deep=True)
 	
 	metadata = {}
-	breakpoint()
+	
+	main_clause 	= grep_next_subtree(source, 'S')
+	main_clause_vp 	= grep_next_subtree(main_clause, 'VP')
+	main_clause_v 	= grep_next_subtree(main_clause_vp, 'V_(in)?trans')
+	metadata.update({'v_trans': 'intransitive' if main_clause_v.label().symbol() == 'V_intrans' else 'transitive'})
+	
+	# placeholders
+	metadata.update({'subj_def': None})
+	metadata.update({'obj_def': None})
+	metadata.update({'subj_num': 'sg'})
+	metadata.update({'obj_num': 'sg'})
+	
+	# no aux in turkish grammar, so use the main clause verb stem instead for now
+	metadata.update({'main_v': grep_next_subtree(main_clause_v, 'stem')[0].strip()})
+	
+	# currently no adverbial clauses in turkish
+	pre_main_advps = 0
+	post_main_advps = 0
+	metadata.update({'pre_main_advps': pre_main_advps})
+	metadata.update({'post_main_advps': post_main_advps})
+	metadata.update({'total_advps': pre_main_advps + post_main_advps})
+	
+	source_pos_seq = get_turkish_pos_seq(source)
+	metadata.update({'source_pos_seq': source_pos_seq})
+	
+	if pfx == 'pos':
+		metadata.update({'target_pos_seq': source_pos_seq})
+	else:
+		# this may need to be changed later based on what they said about turkish negation
+		# if those other strategies are added, more will be needed here
+		tgt_main_clause 	= grep_next_subtree(target, 'S')
+		tgt_main_clause_vp 	= grep_next_subtree(tgt_main_clause, 'VP')
+		tgt_main_clause_v 	= grep_next_subtree(tgt_main_clause_vp, 'stem')
+		tgt_main_clause_v.set_label(f'{tgt_main_clause_v.label().symbol()} Neg')
+		tgt_pos_seq 		= get_turkish_pos_seq(target)
+		metadata.update({'target_pos_seq': tgt_pos_seq})
 	
 	return metadata
 
