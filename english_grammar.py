@@ -4,7 +4,7 @@ from nltk import nonterminals, Nonterminal, Production
 
 import random
 from typing import *
-from generator import generate
+from generator import generate, format_tree_string
 from generator import create_dataset_json, combine_dataset_jsons
 """
 	Create some nonterminals
@@ -75,7 +75,7 @@ not_grammar = PCFG.fromstring("""
 	
 	VP -> IV [0.5] | TV NPAcc [0.5]
 	
-	RelP -> RP NPSgNom M TV [0.5] | RP NPPlNom M TV [0.5]
+	RelP -> RP NPNom M TV [1.0]
 	
 	NPAcc -> NPSgAcc [0.4] | NPPlAcc [0.4] | NPSgAcc RelP [0.1] | NPPlAcc RelP [0.1]
 	
@@ -108,37 +108,18 @@ not_grammar = PCFG.fromstring("""
 	comma -> ',' [1.0]
 """)
 
-def negation(grammar: PCFG) -> Tuple[str]:
+setattr(not_grammar, 'lang', 'en')
+
+def negation(grammar: PCFG) -> Tuple:
 	pos_tree = generate(grammar)
-	source = ' '.join(pos_tree.leaves())
-	source = source.strip()
-	source = source[0].upper() + source[1:]
-	source = source.replace(' , ', ', ')
-	source = source.replace('  ', ' ')
-	source += '.'
-	
 	neg_tree = negate(pos_tree)
-	target = ' '.join(neg_tree.leaves())
-	target = target.strip()
-	target = target[0].upper() + target[1:]
-	target = target.replace(' , ', ', ')
-	target = target.replace('  ', ' ')
-	target += '.'
-	
-	return source, 'neg', target
+	return pos_tree, 'neg', neg_tree
 
-def affirmation(grammar: PCFG) -> Tuple[str]:
+def affirmation(grammar: PCFG) -> Tuple:
 	pos_tree = generate(grammar)
-	source = ' '.join(pos_tree.leaves())
-	source = source.strip()
-	source = source[0].upper() + source[1:]
-	source = source.replace(' , ', ', ')
-	source = source.replace('  ', ' ')
-	source += '.'
-	
-	return source, 'pos', source
+	return pos_tree, 'pos', pos_tree
 
-def neg_or_pos(grammar: PCFG, neg_p: float = 0.5) -> Tuple[str]:
+def neg_or_pos(grammar: PCFG, neg_p: float = 0.5) -> Tuple:
 	
 	return negation(grammar) if random.random() < neg_p else affirmation(grammar)
 
@@ -193,6 +174,7 @@ def test_file(grammar: PCFG = not_grammar, n: int = 10, filename: str = 'test.tx
 	Create a small test file with n pairs of formatted positive and negative sentences
 	"""
 	s = [negation(grammar) for _ in range(n)]
+	s = [(format_tree_string(t[0]), t[1], format_tree_string(t[2])) for t in s]
 	with open(filename, 'w') as out:
 		for pair in s:
 			out.write(' '.join(pair) + '\n\n')

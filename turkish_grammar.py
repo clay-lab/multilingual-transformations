@@ -13,26 +13,37 @@ turkish_grammar = PCFG.fromstring("""
     S -> NP_nom1 VP Person1 [.23]
     S -> NP_nom2 VP Person2 [.22]
     S -> NP_nom3 VP Person3 [.22]
+    
     VP -> NP_acc V_trans [.5] | V_intrans [.5]
+    
     NP_nom1 -> 'ben' [1]
     NP_nom2 -> 'sen' [1]
     NP_nom3 -> 'o' [.4] | N [.6]
+    
     NP_acc -> N_obj '-i' [.8] | PP N_obj '-i' [.2]
+    
     PP -> N_place P [1]
     P -> '-de-ki' [1]
+    
     N -> 'kedi' [.1] | 'köpek' [.1] | 'veteriner' [.1] | 'memur' [.1] | 'kraliçe' [.1] | 'başkan' [.1] | 'koyun' [.1] | 'yönetmen' [.1] | 'işçi' [.1] | ' balina' [.1]
     N_obj -> ' yemek' [.1] | ' ekmek' [.1] | ' goril' [.1] | ' ayı' [.1] | ' eşek' [.1] | ' ördek' [.1] | ' oklukirpi' [.2] | ' gergeden' [.1] | ' maymun' [.1]
     N_place -> ' masa' [.1] | ' sandalye' [.1] | ' yer' [.1] | ' kitap' [.1] | ' ev' [.1] | ' sokak' [.1] | ' oda' [.1] | ' köşe' [.1] | ' tavan' [.05] | ' kanape' [.05] | ' atölye' [.05] | ' deniz' [.05]
+    
     V_trans -> V_stem_trans Tense [1]
     V_stem_trans -> ' iste' [.05] | ' sev' [.05] | ' ara' [.05]| ' gör' [.1] | ' siparış et' [.05] |' güven' [.05] | ' bul' [.05]| ' emret' [.05] |' tut'[.05]| ' kır'[.05]| ' affet'[.05]| ' özgür bırak' [.05]| ' tercih et'[.05]|' gözlemle' [.05]| ' sakla' [.05]| ' çal' [.05] | ' söv' [.05] | ' kurtar' [.05]| ' uyar' [.05]
+    
     Tense -> '-iyor' [.5] | '-di' [.25] | '-ecek' [.25]
+    
     Person -> Person1 [.2] | Person2 [.2] | Person3 [.6]
     Person1 -> '-im' [1]
     Person2 -> '-sin' [1]
     Person3 -> '-' [1]
+    
     V_intrans -> V_stem_intrans Tense [1]
     V_stem_intrans -> ' dinlen' [.05]| ' git' [.05] | ' öğren' [.05] |  ' izin ver' [.05]|' bekle' [.05]  | ' imdat iste' [.05] | ' özür dile'[.05] | ' oy ver' [.05] | ' gül' [.05] |' şikayet et'[.05]| ' övün'[.05]| ' şaşır'[.05] | ' acele et'[.05]| ' hata yap'[.05]| ' otur'[.05]| ' dur'[.05] | ' bağır' [.05]| ' not al'[.05] | ' yüz'[.05]| ' düşün'[.05]
 """)
+
+setattr(turkish_grammar, 'lang', 'tu')
 
 def vh(expression: str) -> str:
     expression = re.sub('(?<=u.)-i', 'u', expression)
@@ -401,29 +412,16 @@ def nodash(expression: str) -> str:
     return expression
 '''
 
-def affirmation(grammar: PCFG) -> Tuple[str]:
-    pos_tree = generate(grammar)
-    pos = ''.join(pos_tree.leaves())
-    source = vowelharmony(pos)
-    source = (source[0].upper() if not source[0] == 'i' else 'İ') + source[1:] + '.'
+def affirmation(grammar: PCFG) -> Tuple:
+    source = generate(grammar)
     return source, 'pos', source
 
-def negation(grammar: PCFG) -> Tuple[str]:
-    pos_tree = generate(grammar)
-    pos = ''.join(pos_tree.leaves())
-    
-    neg_tree = negate(pos_tree)
-    neg = ''.join(neg_tree.leaves())
-    
-    source = vowelharmony(pos)
-    source = (source[0].upper() if not source[0] == 'i' else 'İ') + source[1:] + '.'
-    
-    target = vowelharmony_n(neg)
-    target = (target[0].upper() if not target[0] == 'i' else 'İ') + target[1:] + '.'
-    
+def negation(grammar: PCFG) -> Tuple:
+    source = generate(grammar)
+    target = negate(source)
     return source, 'neg', target
 
-def neg_or_pos(grammar: PCFG, neg_p: float = 0.5) -> Tuple[str]:
+def neg_or_pos(grammar: PCFG, neg_p: float = 0.5) -> Tuple:
     
     return negation(grammar) if random.random() < neg_p else affirmation(grammar)
 

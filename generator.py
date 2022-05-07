@@ -12,9 +12,17 @@ from tqdm import tqdm
 from typing import *
 from functools import partial
 from itertools import permutations
+from contextlib import suppress
 
 from nltk import PCFG, Tree
 from nltk import nonterminals, Nonterminal, Production
+
+GERMAN_MODAL_MAP = {
+	'kann': 'können',
+	'darf': 'dürfen',
+	'muss': 'müssen',
+	'soll': 'sollen'
+}
 
 def generate(
 	grammar: PCFG, 
@@ -69,6 +77,41 @@ def _generate(
 		
 		return result
 
+def format_tree_string(
+	t: Tree, 
+	lang: str, 
+	pfx: str = None
+) -> str:
+	"""
+	Convert a tree to a string.
+	:param t: Tree: an NLTK Tree
+	:param lang: str: the name of the language that generate the string
+	:param pfx: str: whether the sentence is positive or negative. only used for turkish
+	:returns str: the flattened version of the tree as a string.
+	"""
+	t = t.copy(deep=True)
+	
+	if not lang == 'tu':
+		t = ' '.join(t.leaves())
+		t = t.strip()
+		t = t[0].upper() + t[1:]
+		t = t.replace(' , ', ', ')
+		t = t.replace('  ', ' ')
+		t += '.'
+	else:
+		# can't due this above due to a circular import
+		from turkish_grammar import vowelharmony, vowelharmony_n
+		
+		t = ''.join(t.leaves())
+		if not pfx == 'neg':
+			t = vowelharmony(t)
+		else:
+			t = vowelharmony_n(t)
+		
+		t = (t[0].upper() if not t[0] == 'i' else 'İ') + t[1:] + '.'
+		
+	return t
+
 def create_csv_file(
 	filename: str, 
 	grammar: PCFG, 
@@ -102,6 +145,383 @@ def create_data_path(d: str) -> None:
 			print(f'Creating directory @ "{split_d[0]}"')
 			os.makedirs(split_d[0])
 
+def get_labels(t: Tree) -> List[str]:
+	'''
+	Get the labels of an NLTK tree.
+	
+	:param t: Tree: the tree whose labels to return
+	:returns labels: a list of the labels of the Tree as strings,
+					 corresponding to the linear order in which they would be printed.
+	'''
+	labels = [t.label().symbol()]
+	for child in t:
+		if isinstance(child, Tree):
+			labels.extend(get_labels(child))
+	
+	return labels
+
+def get_pos_labels(t: Tree) -> List[str]:
+	'''
+	Get the part-of-speech labels from an NLTK tree.
+	This returns only the labels for the terminal nodes.
+	
+	:param t: Tree: the tree whose labels to return
+	:returns labels: a list of the labels of the terminal nodes of the tree as strings,
+					 corresponding to the linear order in which they would be printed.
+	'''
+	labels = []
+	for child in t:
+		if isinstance(child, Tree) and not isinstance(child[0], str):
+			labels.extend(get_pos_labels(child))
+		elif not isinstance(child.label(), str):
+			labels.append(child.label().symbol())
+		else:
+			labels.append(child.label())
+	
+	return labels
+
+def grep_next_subtree(
+	t: Tree,
+	expr: str
+) -> Tree:
+	"""
+	Get the next subtree whose label matches the expr.
+	:param t: Tree: the tree to search.
+	:param expr: a regex to search when searching the tree
+	"""
+	try:
+		subt = next(t.subtrees(filter = lambda x: re.search(expr, x.label().symbol())))
+	except StopIteration:
+		subt = None
+	
+	return subt
+
+def get_english_pos_seq(t: Tree) -> str:
+	'''Remove unwanted info from English pos tags for comparison purposes and return as a string.'''
+	pos_seq = get_pos_labels(t)
+	pos_seq = [
+		pos_tag
+			.replace('Sg', '')
+			.replace('Pl', '')
+			.replace('Nom', '')
+			.replace('Acc', '')
+			.replace('TV', 'V')
+			.replace('IV', 'V')
+			.replace('comma', '')
+			.replace('PN', 'N')
+			.replace('NTand', '')
+		for pos_tag in pos_seq
+	]
+	pos_seq = '[' + '] ['.join([l for tag in [pos_tag.split() for pos_tag in pos_seq if pos_tag] for l in tag]) + ']'
+	
+	return pos_seq 
+
+def get_english_example_metadata(
+	source: Tree,
+	pfx: str,
+	target: Tree
+) -> Dict:
+	"""
+	Gets metadata about the passed example, consisting of a seq2seq mapping with a source, prefix, and target.
+	:param source: Tree: the source Tree
+	:param pfx: str: the task prefix passed to the model
+	:param target: the target Tree
+	:returns metadata: a dictionary recording the following properties for the example:
+					   - transitivity of the main verb (v_trans)
+					   - definiteness of main clause subject/object (subj_def, obj_def)
+					   - number of main clause subject/object (subj_num, obj_num)
+					   - the identity of the main auxiliary (main_aux)
+					   - number of adverbial clauses before the main clause
+					   - number of adverbial clauses after the main clause
+					   - the number of adverbial clauses
+					   - the PoS sequence of the source and target
+	"""
+	source = source.copy(deep=True)
+	target = target.copy(deep=True)
+	
+	metadata = {}
+	
+	# transitivity of main clause verb
+	main_clause 	= grep_next_subtree(source, 'S2')
+	main_clause_mp 	= grep_next_subtree(main_clause, 'MP')
+	main_clause_vp 	= grep_next_subtree(main_clause_mp, 'VP')
+	main_clause_v 	= grep_next_subtree(main_clause, '(IV|TV)')
+	metadata.update({'v_trans': 'intransitive' if main_clause_v.label().symbol() == 'IV' else 'transitive'})
+	
+	# definiteness of main clause subject
+	main_clause_subj = grep_next_subtree(main_clause, 'NPNom')
+	if main_clause_subj[0].label().symbol() == 'PN':
+		metadata.update({'subj_def': 'definite'})
+	else:
+		main_clause_subj_det = grep_next_subtree(main_clause, 'Det')
+		if main_clause_subj_det[0] == 'the':
+			metadata.update({'subj_def': 'definite'})
+		else:
+			metadata.update({'subj_def': 'indefinite'})
+	
+	# definiteness of main clause object
+	if main_clause_v.label().symbol() == 'TV':
+		main_clause_obj = grep_next_subtree(main_clause_vp, 'NPAcc')
+		main_clause_obj_det = grep_next_subtree(main_clause_obj, 'Det')
+		if main_clause_obj_det[0] == 'the':
+			metadata.update({'obj_def': 'definite'})
+		else:
+			metadata.update({'obj_def': 'indefinite'})
+	else:
+		metadata.update({'obj_def': None})
+	
+	# number of main clause subject
+	if main_clause_subj[0].label().symbol() == 'PN':
+		metadata.update({'subj_num': 'sg'})
+	else:
+		metadata.update({'subj_num': 'sg' if 'NSgNom' in get_pos_labels(main_clause_subj) else 'pl'})
+	
+	# number of main clause object
+	if main_clause_v.label().symbol() == 'TV':
+		if 'Sg' in main_clause_obj_det.label().symbol():
+			metadata.update({'obj_num': 'sg'})
+		else:
+			metadata.update({'obj_num': 'pl'})
+	else:
+		metadata.update({'obj_num': None})
+	
+	# main auxiliary
+	main_clause_m = grep_next_subtree(main_clause_mp, 'M$')
+	metadata.update({'main_aux': main_clause_m[0]})
+	
+	# number of AdvPs before and after main clause
+	labels = get_labels(source)
+	main_clause_start = labels.index('S2')
+	pre_main_advps 	= len([l for i, l in enumerate(labels) if l == 'AdvP' and i < main_clause_start])
+	post_main_advps = len([l for i, l in enumerate(labels) if l == 'AdvP' and i > main_clause_start])
+	metadata.update({
+		'pre_main_advps'	: pre_main_advps, 
+		'post_main_advps'	: post_main_advps,
+		'total_advps'		: pre_main_advps + post_main_advps
+	})
+	
+	# get pos seq with details suppressed
+	# remove null determiners from PoS sequence
+	for child in source.subtrees(filter = lambda x: 'DetPl' in x.label().symbol()):
+		if child[0] == '':
+			child.set_label('')
+		
+	source_pos_seq = get_english_pos_seq(source)
+	metadata.update({'source_pos_seq': source_pos_seq})
+	
+	if pfx == 'pos':
+		metadata.update({'target_pos_seq': source_pos_seq})
+	else:
+		tgt_main_clause 	= grep_next_subtree(target, 'S2')
+		tgt_main_clause_mp 	= grep_next_subtree(tgt_main_clause, 'MP')
+		tgt_main_clause_m 	= grep_next_subtree(tgt_main_clause_mp, 'M$')
+		
+		# remove null determiners
+		# we do this here because we can't iterate through the tree as easily once the labels are strings,
+		# which is what we set below
+		for child in target.subtrees(filter = lambda x: 'DetPl' in x.label().symbol()):
+			if child[0] == '':
+				child.set_label('')
+		
+		tgt_main_clause_m.set_label('M Neg')
+		tgt_pos_seq 		= get_english_pos_seq(target)
+		metadata.update({'target_pos_seq': tgt_pos_seq})
+	
+	return metadata
+
+def get_german_pos_seq(t: Tree) -> str:
+	'''Remove unwanted info from German pos tags for comparison purposes and return as a string.'''
+	pos_seq = get_pos_labels(t)
+	pos_seq = [re.sub('(Sg|Pl)', '', pos_tag) for pos_tag in pos_seq]
+	pos_seq = [re.sub('(Nom|Acc)', '', pos_tag) for pos_tag in pos_seq]
+	pos_seq = [re.sub('(TV|IV)', 'V', pos_tag) for pos_tag in pos_seq]
+	pos_seq = [re.sub('(3|comma|Pres)', '', pos_tag) for pos_tag in pos_seq]
+	pos_seq = [re.sub('(Masc|Fem|Neut)', '', pos_tag) for pos_tag in pos_seq]
+	pos_seq = [re.sub('(PN|Pron)', 'N', pos_tag) for pos_tag in pos_seq]
+	pos_seq = [re.sub('NTand', 'Conj', pos_tag) for pos_tag in pos_seq]
+	pos_seq = [l for tag in [pos_tag.split() for pos_tag in pos_seq] for l in tag]
+	
+	pos_seq = '[' + '] ['.join([pos_tag for pos_tag in pos_seq if pos_tag]) + ']'
+	
+	return pos_seq 
+
+def get_german_example_metadata(
+	source: Tree,
+	pfx: str,
+	target: Tree
+) -> Dict:
+	"""
+	Gets metadata about the passed example, consisting of a seq2seq mapping with a source, prefix, and target.
+	:param source: Tree: the source Tree
+	:param pfx: str: the task prefix passed to the model
+	:param target: the target Tree
+	:returns metadata: a dictionary recording the following properties for the example:
+					   - transitivity of the main verb (v_trans)
+					   - definiteness of main clause subject/object (subj_def, obj_def)
+					   - number of main clause subject/object (subj_num, obj_num)
+					   - the identity of the main auxiliary (main_aux)
+					   - whether the main clause is subject initial or not
+					   - whether there is an adverbial clause before the main clause
+					   - whether there is an adverbial clause after the main clause
+					   - the number of adverbial clauses
+	"""
+	source = source.copy(deep=True)
+	target = target.copy(deep=True)
+	
+	metadata = {}
+	
+	# transitivity of main clause verb
+	main_clause 	= grep_next_subtree(source, 'S(Inv)?2')
+	main_clause_mp 	= grep_next_subtree(main_clause, 'MP(Sg|Pl)(Inv)?')
+	main_clause_vp 	= grep_next_subtree(main_clause_mp, 'VP')
+	main_clause_vp 	= grep_next_subtree(main_clause_vp, 'VP') # do this twice because of how the german grammar is set up
+	main_clause_vp 	= grep_next_subtree(main_clause_vp, '(IVP|TVP(Masc|Fem|Neut)?)')
+	main_clause_v 	= grep_next_subtree(main_clause_vp, '(IV|TV)$')
+	metadata.update({'v_trans': 'intransitive' if main_clause_v.label().symbol() == 'IV' else 'transitive'})
+	
+	# definiteness of main clause subject
+	main_clause_subj = grep_next_subtree(main_clause, 'NP(Sg|Pl)Nom')
+	main_clause_subj = grep_next_subtree(main_clause_subj, '(NP(Masc|Fem)(Sg|Pl)Nom|PN)')
+	if main_clause_subj.label().symbol() == 'PN':
+		metadata.update({'subj_def': 'definite'})
+	else:
+		main_clause_subj_det = grep_next_subtree(main_clause, 'Det')
+		if main_clause_subj_det[0] in ['der', 'die', 'das']:
+			metadata.update({'subj_def': 'definite'})
+		else:
+			metadata.update({'subj_def': 'indefinite'})
+	
+	# definiteness of main clause object
+	if main_clause_v.label().symbol() == 'TV':
+		main_clause_obj 	= grep_next_subtree(main_clause_vp, 'NP(Masc|Fem|Neut)(Sg|Pl)Acc')
+		main_clause_obj_det = grep_next_subtree(main_clause_obj, 'Det')
+		if main_clause_obj_det[0] in ['den', 'die', 'das']:
+			metadata.update({'obj_def': 'definite'})
+		else:
+			metadata.update({'obj_def': 'indefinite'})
+	else:
+		metadata.update({'obj_def': None})
+	
+	# number of main clause subject
+	if main_clause_subj.label().symbol() == 'PN':
+		metadata.update({'subj_num': 'sg'})
+	else:
+		metadata.update({
+			'subj_num': 'sg' 
+				if any(
+					l for l in get_pos_labels(main_clause_subj) 
+					if re.match('N(Masc|Fem|Neut)SgNom', l)
+				)
+				else 'pl'
+		})
+	
+	# number of main clause object
+	if main_clause_v.label().symbol() == 'TV':
+		if 'Pl' in main_clause_obj_det.label().symbol():
+			metadata.update({'obj_num': 'pl'})
+		else:
+			metadata.update({'obj_num': 'sg'})
+	else:
+		metadata.update({'obj_num': None})
+	
+	# main auxiliary
+	main_clause_m = grep_next_subtree(main_clause_mp, 'M(?!P)')
+	metadata.update({'main_aux': GERMAN_MODAL_MAP.get(main_clause_m[0], main_clause_m[0])})
+	
+	# is the main clause subject initial?
+	labels = get_labels(source)
+	metadata.update({'main_clause_subj_initial': not 'SInv2' in labels})
+	
+	# number of AdvPs before and after main clause
+	main_clause_start 	= labels.index('S2') if 'S2' in labels else labels.index('SInv2')
+	pre_main_advps 		= len([l for i, l in enumerate(labels) if l == 'AdvP' and i < main_clause_start])
+	post_main_advps 	= len([l for i, l in enumerate(labels) if l == 'AdvP' and i > main_clause_start])
+	metadata.update({
+		'pre_main_advps'	: pre_main_advps, 
+		'post_main_advps'	: post_main_advps,
+		'total_advps'		: pre_main_advps + post_main_advps
+	})
+	
+	# get pos seq with details suppressed	
+	source_pos_seq = get_german_pos_seq(source)
+	metadata.update({'source_pos_seq': source_pos_seq})
+	
+	if pfx == 'pos':
+		metadata.update({'target_pos_seq': source_pos_seq})
+	else:
+		tgt_main_clause 		= grep_next_subtree(target, '(S2|SInv2)')
+		if not 'kein' in ' '.join(tgt_main_clause.leaves()):
+			tgt_main_clause_mp 	= grep_next_subtree(tgt_main_clause, 'MP(Sg|Pl)(Inv)?')
+			tgt_main_clause_vp 	= grep_next_subtree(tgt_main_clause_mp, 'VP')
+			tgt_main_clause_vp 	= grep_next_subtree(tgt_main_clause_vp, 'VP') # do this twice because of how the german grammar is set up
+			tgt_main_clause_vp 	= grep_next_subtree(tgt_main_clause_vp, '(IVP|TVP(Masc|Fem|Neut)?)')
+			tgt_main_clause_v 	= grep_next_subtree(tgt_main_clause_vp, '(IV|TV)$')
+			tgt_main_clause_v.set_label(f'Neg {tgt_main_clause_v.label().symbol()}')
+		else:
+			main_clause_indef_det = next(
+				tgt_main_clause.subtrees(
+					filter = lambda x: len(x.leaves()) == 1 and 'kein' in x.leaves()[0]
+				)
+			)
+			main_clause_indef_det.set_label(f'Neg {main_clause_indef_det.label().symbol()}')
+			
+		tgt_pos_seq = get_german_pos_seq(target)
+		metadata.update({'target_pos_seq': tgt_pos_seq})
+	
+	return metadata
+
+def get_turkish_example_metadata(
+	source: Tree,
+	pfx: str,
+	target: Tree
+) -> Dict:
+	"""
+	Gets metadata about the passed example, consisting of a seq2seq mapping with a source, prefix, and target.
+	:param source: Tree: the source Tree
+	:param pfx: str: the task prefix passed to the model
+	:param target: the target Tree
+	:returns metadata: a dictionary recording the following properties for the example:
+					   - transitivity of the main verb (v_trans)
+					   - definiteness of main clause subject/object (subj_def, obj_def)
+					   - number of main clause subject/object (subj_num, obj_num)
+					   - the identity of the main auxiliary (main_aux)
+					   - whether there is an adverbial clause before the main clause
+					   - whether there is an adverbial clause after the main clause
+					   - the number of adverbial clauses
+	(not all of these are currently in the turkish grammar)
+	"""
+	source = source.copy(deep=True)
+	target = target.copy(deep=True)
+	
+	metadata = {}
+	breakpoint()
+	
+	return metadata
+
+def get_example_metadata(
+	grammar: PCFG,
+	*args, **kwargs,
+) -> Dict:
+	"""
+	Gets metadata about the passed example, consisting of a seq2seq mapping with a source, prefix, and target.
+	:param grammar: the grammar that generated the example
+	:param args: passed to get_lang_example_metadata()
+	:param kwargs: passed to get_lang_example_metadata()
+	:returns metadata: a dictionary recording language-specific properties for the example
+	"""
+	function_map = {
+		'en': get_english_example_metadata,
+		'de': get_german_example_metadata,
+		'tu': get_turkish_example_metadata
+	}
+	
+	try:
+		metadata = function_map[grammar.lang](*args, **kwargs)
+	except KeyError:
+		metadata = {}
+	
+	return metadata	
+
 def create_dataset_json(
 	grammar: PCFG, 
 	ex_generator: Callable, 
@@ -111,6 +531,7 @@ def create_dataset_json(
 ) -> None:
 	"""
 	Create a dataset json file that can be read using the datasets module's dataset loader.
+	Also outputs a companion json that records various linguistic properties of each sentence.
 	:param grammar: PCFG: a PCFG object
 	:param ex_generator: function: a function that creates a pair of sentences and associated tags from the grammar
 	:param file_prefix: str: an identifier to add to the beginning of the output file names
@@ -120,16 +541,24 @@ def create_dataset_json(
 	"""
 	file_prefix = file_prefix + '_' if file_prefix and not (file_prefix[-1] in ['-', '_']) else ''
 	create_data_path(os.path.join('data', file_prefix))
-	
+
 	for name, n_examples in splits.items():
+		metadata = []
 		if not os.path.exists(os.path.join('data', file_prefix + name + '.json.gz')) or overwrite:
 			prefixes = {}
 			l = []
 			print(f'Generating {name} examples')
 			for n in tqdm(range(n_examples)):
 				source, pfx, target = ex_generator(grammar)
+				metadata.append(get_example_metadata(grammar, source, pfx, target))
 				prefixes[pfx] = 1 if not pfx in prefixes else prefixes[pfx] + 1
-				l += [{'translation': {'src': source, 'prefix': pfx, 'tgt': target}}]
+				l += [{
+					'translation': {
+						'src'	: format_tree_string(source, grammar, pfx), 
+						'prefix': pfx, 
+						'tgt'	: format_tree_string(target, grammar, pfx)
+					}
+				}]
 			
 			for pfx in prefixes:
 				print(f'{name} prop {pfx} examples: {prefixes[pfx]/n_examples}')
@@ -140,7 +569,13 @@ def create_dataset_json(
 					for ex in tqdm(l):
 						json.dump(ex, f, ensure_ascii=False)
 						f.write('\n')
-		
+				
+				print('Saving metadata to data/' + file_prefix + name + '_metadata.json.gz')
+				with gzip.open(os.path.join('data', file_prefix + name + '_metadata.json.gz'), 'wt', encoding='utf-8') as f:
+					for ex in tqdm(metadata):
+						json.dump(ex, f, ensure_ascii=False)
+						f.write('\n')
+			
 			print('')
 		else:
 			print(f'{name} dataset already exists. Skipping. Use overwrite=True to force regeneration.')
@@ -442,3 +877,7 @@ def load_config(path: 'str or Pathlike' = None) -> Dict[str,List]:
 		configs = json.load(in_file)
 	
 	return configs
+
+if __name__ == '__main__':
+	
+	create_and_combine_negation_datasets()

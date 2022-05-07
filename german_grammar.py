@@ -201,6 +201,8 @@ nicht_grammar = PCFG.fromstring("""
 	
 """)
 
+setattr(nicht_grammar, 'lang', 'de')
+'''
 nicht_grammar_no_indef = PCFG.fromstring("""
 	S -> AdvP comma SInv1 [0.1] | S1 [0.9]
 	SInv -> AdvP comma SInv1 [0.1] | SInv1 [0.9]
@@ -297,31 +299,19 @@ nicht_grammar_no_indef = PCFG.fromstring("""
 	
 """)
 
-def negation(grammar: PCFG) -> Tuple[str]:
-	pos_tree = generate(grammar)
-	source = ' '.join(pos_tree.leaves())
-	source = source[0].upper() + source[1:]
-	source = source.replace(' , ', ', ')
-	source += '.'
-	
-	neg_tree = negate(pos_tree)
-	target = ' '.join(neg_tree.leaves())
-	target = target[0].upper() + target[1:]
-	target = target.replace(' , ', ', ')
-	target += '.'
-	
+setattr(nicht_grammar_no_indef, 'lang', 'de')
+'''
+
+def negation(grammar: PCFG) -> Tuple:
+	source = generate(grammar)
+	target = negate(source)
 	return source, 'neg', target
 
-def affirmation(grammar: PCFG) -> Tuple[str]:
-	pos_tree = generate(grammar)
-	source = ' '.join(pos_tree.leaves())
-	source = source[0].upper() + source[1:]
-	source = source.replace(' , ', ', ')
-	source += '.'
-	
+def affirmation(grammar: PCFG) -> Tuple:
+	source = generate(grammar)
 	return source, 'pos', source
 	
-def neg_or_pos(grammar: PCFG, neg_p: float = 0.5) -> Tuple[str]:
+def neg_or_pos(grammar: PCFG, neg_p: float = 0.5) -> Tuple:
 	
 	return negation(grammar) if random.random() < neg_p else affirmation(grammar)
 	
