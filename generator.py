@@ -99,15 +99,11 @@ def format_tree_string(
 		t = t.replace('  ', ' ')
 		t += '.'
 	else:
-		# can't due this above due to a circular import
+		# can't due this in header due to a circular import
 		from turkish_grammar import vowelharmony, vowelharmony_n
 		
 		t = ''.join(t.leaves())
-		if not pfx == 'neg':
-			t = vowelharmony(t)
-		else:
-			t = vowelharmony_n(t)
-		
+		t = vowelharmony(t) if not pfx == 'neg' else vowelharmony_n(t)
 		t = (t[0].upper() if not t[0] == 'i' else 'İ') + t[1:] + '.'
 		
 	return t
