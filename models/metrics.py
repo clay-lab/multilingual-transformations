@@ -186,6 +186,57 @@ class metric():
 			f'false_points={self.false_points}\n\t' + \
 			f'omitted_points={self.omitted_points}\n' + \
 		')'
+	
+	@property
+	def dict(self) -> Dict:
+		'''Returns the current results as a formatted dict of lists.'''
+		
+		# if we have no results yet, return an empty dict
+		if not hasattr(self, 'results'):
+			return {}
+		
+		# get the non-keyword arguments and give them generic keys
+		d = {
+			f'arg{i}': [v for res in self.results for v in res[0][0][i]]
+			for i in range(len(self.results[0][0][0]))
+		}
+		
+		d.update({
+			k: [v for res in self.results for v in res[0][1][k]]
+			for k in self.results[0][0][1]
+		})
+		
+		d.update({
+			'result': [res[1] for res in self.results]	
+		})
+		
+		return d
+	
+	@property
+	def df(self) -> 'pd.DataFrame':
+		'''Returns the current results as a pandas data frame.'''
+		import pandas as pd
+		
+		# if we have no results yet, return an empty dataframe
+		if not hasattr(self, 'results'):
+			return pd.DataFrame([])
+		
+		# give generic names to the non-keyword args
+		colnames = 	[f'arg{i}' for i in range(len(self.results[0][0][0]))]
+		
+		# then give names to the keyword args and the result
+		colnames += [*list(self.results[0][0][1].keys())]
+		colnames += ['result']
+		
+		df = pd.DataFrame(
+			[
+				[*res[0][0], *list(res[0][1].values()), res[1]]
+				for res in self.results
+			],
+			columns=colnames
+		)
+		
+		return df	
 
 @metric
 def exact_match(

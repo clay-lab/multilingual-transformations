@@ -42,14 +42,14 @@ def generate(
 	start = grammar.start() if not start else start
 	depth = sys.maxsize if depth is None else depth
 	items = [start]
-	tree  = _generate(grammar,items, depth)
+	tree  = _generate(grammar, items, depth)
 	return tree[0]
 
 def _generate(
 	grammar: PCFG, 
 	items: List[str], 
 	depth: int = None
-):
+) -> Tree:
 	'''
 	Generates a sentence from the passed grammar.
 	
