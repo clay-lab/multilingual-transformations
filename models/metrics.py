@@ -9,6 +9,7 @@ from typing import *
 from inspect import signature, getmembers
 from itertools import cycle
 from statistics import mean
+from collections import defaultdict
 
 # language-specific regexes to match neg word(s)
 NEG_REGEXES = {
@@ -17,13 +18,12 @@ NEG_REGEXES = {
 	'tu': re.compile('(m(i|ı|u|ü)y|m(adı|edi)|m(aya|eye))'),
 }
 
-# language-specific lowercase functions
+# language-specific lowercase function
 # needed to deal with Turkish i's
-LOWERCASE = {
-	'en': lambda s: s.lower(),
-	'de': lambda s: s.lower(),
+LOWERCASE = defaultdict(lambda: lambda s: s.lower())
+LOWERCASE.update({
 	'tu': lambda s: s.replace('İ', 'i').replace('I', 'ı').lower(),
-}
+})
 
 class metric():
 	'''
