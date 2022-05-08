@@ -186,56 +186,35 @@ class metric():
 			f'omitted_points={self.omitted_points}\n' + \
 		')'
 	
-	@property
-	def dict(self) -> Dict:
+	def to_list(self) -> List:
+		'''Returns the current results as a formatted list of dicts.'''
+		if not hasattr(self, 'results'):
+			return []
+		
+		# the first part names the args passed without using keywords
+		return [{
+				**{k: res[0][0][i] for k, i in zip(list(self.signature.parameters.keys()), range(len(res[0][0])))},
+				**res[0][1],
+				self.name: res[1]
+			} for res in self.results
+		]
+	
+	def to_dict(self) -> Dict:
 		'''Returns the current results as a formatted dict of lists.'''
 		
 		# if we have no results yet, return an empty dict
 		if not hasattr(self, 'results'):
 			return {}
 		
-		# get the non-keyword arguments and give them generic keys
-		d = {
-			f'arg{i}': [v for res in self.results for v in res[0][0][i]]
-			for i in range(len(self.results[0][0][0]))
-		}
+		l = self.to_list()
 		
-		d.update({
-			k: [v for res in self.results for v in res[0][1][k]]
-			for k in self.results[0][0][1]
-		})
-		
-		d.update({
-			self.name: [res[1] for res in self.results]	
-		})
-		
-		return d
-	
-	@property
-	def df(self) -> 'pd.DataFrame':
+		return {k: [d[k] for d in l] for k in l[0]}
+			
+	def to_dataframe(self) -> 'pd.DataFrame':
 		'''Returns the current results as a pandas data frame.'''
 		import pandas as pd
 		
-		# if we have no results yet, return an empty dataframe
-		if not hasattr(self, 'results'):
-			return pd.DataFrame([])
-		
-		# give generic names to the non-keyword args
-		colnames = 	[f'arg{i}' for i in range(len(self.results[0][0][0]))]
-		
-		# then give names to the keyword args and the result
-		colnames += [*list(self.results[0][0][1].keys())]
-		colnames += [self.name]
-		
-		df = pd.DataFrame(
-			[
-				[*res[0][0], *list(res[0][1].values()), res[1]]
-				for res in self.results
-			],
-			columns=colnames
-		)
-		
-		return df	
+		return pd.DataFrame(self.to_list())
 
 @metric
 def exact_match(
