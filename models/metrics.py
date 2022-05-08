@@ -207,7 +207,7 @@ class metric():
 		})
 		
 		d.update({
-			'result': [res[1] for res in self.results]	
+			self.name: [res[1] for res in self.results]	
 		})
 		
 		return d
@@ -226,7 +226,7 @@ class metric():
 		
 		# then give names to the keyword args and the result
 		colnames += [*list(self.results[0][0][1].keys())]
-		colnames += ['result']
+		colnames += [self.name]
 		
 		df = pd.DataFrame(
 			[
