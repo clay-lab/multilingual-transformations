@@ -18,8 +18,7 @@ NEG_REGEXES = {
 	'tu': re.compile('(m(i|ı|u|ü)y|m(adı|edi)|m(aya|eye))'),
 }
 
-# language-specific lowercase function
-# needed to deal with Turkish i's
+# language-specific lowercase function to deal with Turkish i's
 LOWERCASE = defaultdict(lambda: lambda s: s.lower())
 LOWERCASE.update({
 	'tu': lambda s: s.replace('İ', 'i').replace('I', 'ı').lower(),
@@ -293,33 +292,35 @@ def tgt_lang_negation_in_prediction(
 	'''Is the neg word from the target language in the sentence?'''
 	return NEG_REGEXES[tgt_lang].search(LOWERCASE[tgt_lang](pred_sentence))
 
-# @metric
-# def first_word_match(
-# 	pred_sentence: str, 
-# 	gold_sentence: str
-# ) -> Union[bool,'NoneType']:
-# 	'''Does the first word of each sentence match? If either sentence is empty, returns None.'''
-# 	pred_words = pred_sentence.split()
-# 	gold_words = gold_sentence.split()
+"""
+@metric
+def first_word_match(
+	pred_sentence: str, 
+	gold_sentence: str
+) -> Union[bool,'NoneType']:
+	'''Does the first word of each sentence match? If either sentence is empty, returns None.'''
+	pred_words = pred_sentence.split()
+	gold_words = gold_sentence.split()
 	
-# 	# this accounts for an instance when the model has predicted no text
-# 	if pred_words and gold_words:
-# 		return pred_words[0] == gold_words[0]
+	# this accounts for an instance when the model has predicted no text
+	if pred_words and gold_words:
+		return pred_words[0] == gold_words[0]
 
-# @metric
-# def second_word_match(
-# 	pred_sentence: str, 
-# 	gold_sentence: str
-# ) -> Union[bool,'NoneType']:
-# 	'''
-# 	Do the second words of each sentence match? 
-# 	If either sentence has only one word, returns None.
-# 	'''
-# 	pred_words = pred_sentence.split()
-# 	gold_words = gold_sentence.split()
+@metric
+def second_word_match(
+	pred_sentence: str, 
+	gold_sentence: str
+) -> Union[bool,'NoneType']:
+	'''
+	Do the second words of each sentence match? 
+	If either sentence has only one word, returns None.
+	'''
+	pred_words = pred_sentence.split()
+	gold_words = gold_sentence.split()
 	
-# 	if len(pred_words) > 1 and len(gold_words) > 1:
-# 		return pred_words[1] == gold_words[1]
+	if len(pred_words) > 1 and len(gold_words) > 1:
+		return pred_words[1] == gold_words[1]
+"""
 
 @metric
 def one_trn_lang_negation(
