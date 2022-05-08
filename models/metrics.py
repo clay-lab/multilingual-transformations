@@ -350,6 +350,7 @@ def compute_metrics(
 	gold_file: str,
 	metrics: List[metric] = all_metrics, 
 	neg_only: bool = True,
+	return_results: str = None,
 ) -> Dict:
 	'''
 	Computes metrics on a prediction file and a gold file.
@@ -362,11 +363,24 @@ def compute_metrics(
 			metrics (List[metric])	: a list of metrics to run on the passed files.
 									  (these are defined above in this file).
 									  Default runs all metrics defined in this file.
+			neg_only (bool)			: whether to run on all sentences or only those with the 'neg' task.
+									  to be removed soon.
+			return_results (bool)	: whether and in what format to return the individual results.
+									  default returns only the mean accuracy.
+									  pass 'list', 'dict', or 'df'/'dataframe' to get the individual results
+									  in that format.
 		
 		returns:
 			props (Dict[str,float])	: a dictionary mapping the name of each metric to the
 									  proportion of sentences that pass that metric.
 	'''
+	RETURN_RESULTS_MAP = {
+		'list': lambda x: x.to_list(),
+		'dict': lambda x: x.to_dict(),
+		'df': lambda x: x.to_dataframe(),
+		'dataframe': lambda x: x.to_dataframe(),
+	}
+	
 	def format_lines(lines: List[str]) -> List[str]:
 		'''
 		Format lines for comparison purposes.
@@ -415,12 +429,14 @@ def compute_metrics(
 	
 	props = {}
 	for m in tqdm(metrics):
-		props[m.name] 	= m(
-							pred_sentence=pred_lines,
-							gold_sentence=gold_lines,
-							src_sentence=src_lines,
-							trn_lang=trn_lang,
-							tgt_lang=tgt_lang
-						)
+		m(
+			pred_sentence=pred_lines,
+			gold_sentence=gold_lines,
+			src_sentence=src_lines,
+			trn_lang=trn_lang,
+			tgt_lang=tgt_lang
+		)
+		
+		props[m.name] = RETURN_RESULTS_MAP.get(return_results, lambda x: x.mean)(m)
 	
 	return props
