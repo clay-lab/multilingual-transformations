@@ -172,7 +172,7 @@ class metric():
 	
 	def __repr__(self) -> str:
 		'''Get a string formatted for printing.'''
-		return self.__str__()
+		return str(self)
 	
 	def __str__(self) -> str:
 		'''Get a string formatted for printing.'''
@@ -201,15 +201,10 @@ class metric():
 	
 	def to_dict(self) -> Dict:
 		'''Returns the current results as a formatted dict of lists.'''
-		
-		# if we have no results yet, return an empty dict
-		if not hasattr(self, 'results'):
-			return {}
-		
 		l = self.to_list()
 		
-		return {k: [d[k] for d in l] for k in l[0]}
-			
+		return {k: [d[k] for d in l] for k in l[0]} if l else {}
+	
 	def to_dataframe(self) -> 'pd.DataFrame':
 		'''Returns the current results as a pandas data frame.'''
 		import pandas as pd
