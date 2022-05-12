@@ -1,4 +1,6 @@
 # Multilingual Syntactic Transformations
+(WIP: This needs to be rewritten.)
+
 This repository contains code for replicating the experiments of [Coloring the Blank Slate: Pre-training Imparts a Hierarchical Inductive Bias to Sequence-to-sequence Models](https://openreview.net/pdf?id=ztZ70wprmjY).
 
 ## Dependencies
