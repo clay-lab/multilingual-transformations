@@ -186,6 +186,7 @@ def grep_next_subtree(
 	Get the next subtree whose label matches the expr.
 	:param t: Tree: the tree to search.
 	:param expr: a regex to search when searching the tree
+	:returns Tree: the next subtree in t whose label's symbol matches expr
 	"""
 	try:
 		subt = next(t.subtrees(filter = lambda x: re.search(expr, x.label().symbol())))
