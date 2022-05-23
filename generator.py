@@ -514,8 +514,8 @@ def get_turkish_example_metadata(
 	metadata.update({'v_trans': 'intransitive' if main_clause_v.label().symbol() == 'V_intrans' else 'transitive'})
 	
 	# placeholders
-	metadata.update({'subj_def': None})
-	metadata.update({'obj_def': None})
+	metadata.update({'subj_def': 'definite'})
+	metadata.update({'obj_def': 'definite'})
 	metadata.update({'subj_num': 'sg'})
 	metadata.update({'obj_num': 'sg'})
 	

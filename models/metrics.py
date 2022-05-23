@@ -193,7 +193,13 @@ class metric():
 		
 		# the first part names the args passed without using keywords
 		return [{
-				**{k: res[0][0][i] for k, i in zip(list(self.signature.parameters.keys()), range(len(res[0][0])))},
+				**{
+					k: res[0][0][i] 
+					for k, i in zip(
+						list(self.signature.parameters.keys()), 
+						range(len(res[0][0]))
+					)
+				},
 				**res[0][1],
 				self.name: res[1]
 			} for res in self.results
