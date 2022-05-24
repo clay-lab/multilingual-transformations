@@ -637,10 +637,6 @@ def main():
 			it 		= it_res.group(1)
 			
 			if trainer.is_world_process_zero():
-				# output_eval_file = os.path.join(path, basename + ".eval_results_seq2seq.txt")
-				# with open(output_eval_file, "w") as writer:
-				# 	writer.write(f"iteration,{','.join(list(metrics.keys()))}\n")
-				# 	writer.write(f"{it},{','.join([str(f) for f in list(metrics.values())])}\n")
 				output_eval_file = os.path.join(path, basename + '.eval_results_seq2seq.csv.gz')
 				
 				# sort these columns last
@@ -654,29 +650,14 @@ def main():
 		
 		# plot learning curve
 		eval_files 	= [
-			# os.path.join(path, f"{basename}.eval_results_seq2seq.txt")
 			os.path.join(path, f'{basename}.eval_results_seq2seq.csv.gz')
 			for path in glob.glob(os.path.join(training_args.output_dir, "checkpoint-*"))
 		]
-			
+		
 		eval_preds 	= pd.concat([pd.read_csv(eval_file) for eval_file in eval_files], ignore_index=True)
 		eval_preds 	= eval_preds.sort_values('iteration').reset_index(drop=True)
 		
-		# for c in [c for c in eval_preds.columns if not c == 'iteration']:
-		# 	plt.plot(eval_preds.iteration, eval_preds[c], label=c.replace('_', ' '))
-		
-		# plt.legend(prop={'size': 8})
-		# fig = plt.gcf()
-		# fig.set_size_inches(8, 6)
-		# title = os.path.split(training_args.output_dir)
-		# title = [s for s in title if s][-1]
-		# title = re.findall('(neg-.*)-.*?$', title)
-		# title = title[0].replace('-', '_')
-		# title = f'training: {title}, test: {re.findall("(neg_.*)_.*?", basename)[0]}'
-		# fig.suptitle(title)
-		# fig.savefig(os.path.join(training_args.output_dir, basename + ".learning_curve.pdf"))
-		
-		grouping_vars = [c for c in metrics.columns if not c in ['iteration'] + metric_names]
+		grouping_vars = [c for c in eval_preds.columns if not c in ['iteration'] + metric_names]
 		
 		title = os.path.split(training_args.output_dir)
 		title = [s for s in title if s][-1]
@@ -685,19 +666,41 @@ def main():
 		title = f'training: {title}, test: {re.findall("(neg_.*)_.*?", basename)[0]}'
 		
 		with PdfPages(os.path.join(training_args.output_dir, basename + ".learning_curves.pdf")) as pdf:
-			for var in grouping_vars:
+			common_kwargs = dict(data=eval_preds, x='iteration', ci=None)
+			
+			# var is None is used for an overall plot without groups
+			for var in [None] + grouping_vars:
 				for c in metric_names:
-					ax = sns.lineplot(x=eval_preds.iteration, y=eval_preds[c], label=c.replace('_', ' '), hue=var)
-					ax.legend(prop={'size': 8})
-					fig = plt.gcf()
-					fig.set_size_inches(8, 6)
-					suptitle = f'{title}, groups: {var}'
-					fig.suptitle(suptitle)
-					pdf.savefig()
-					plt.close()
-					del fig
+					plot_kwargs = common_kwargs.copy()
+					plot_kwargs.update(dict(y=c))
+					plot_kwargs.update(dict(label=c.replace('_', ' ')) if var is None else dict(hue=var))
+					
+					sns.lineplot(**plot_kwargs)
+					
+					if var is not None or c == metric_names[-1]:
+						ax = plt.gca()
+						
+						# set legend properties for display
+						ax.legend(prop={'size': 8})
+						ax.get_legend().set_title(var.replace('_', ' ') if var is not None else 'metric')
+						
+						# set axis ticks and limits for display
+						plt.xticks(eval_preds.iteration.unique())
+						_, ymargin = ax.margins()
+						ax.set_ylim((0-ymargin, 1+ymargin))
+						
+						# set ylabel
+						ax.set_ylabel('proportion')
+						
+						fig = plt.gcf()
+						fig.set_size_inches(8, 6)
+						suptitle = f'{title}' + (f', groups: {var}\n{c}' if var is not None else '')
+						fig.suptitle(suptitle)
+						pdf.savefig(bbox_inches='tight')
+						plt.close()
+						del fig
 	
-	return results
+	return results	
 
 def _mp_fn(index):
 	# For xla_spawn (TPUs)
