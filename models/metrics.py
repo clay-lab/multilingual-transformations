@@ -355,7 +355,6 @@ def compute_metrics(
 	pred_file: str, 
 	gold_file: str,
 	metrics: List[metric] = all_metrics, 
-	neg_only: bool = True,
 	return_results: str = None,
 ) -> Dict:
 	'''
@@ -369,8 +368,6 @@ def compute_metrics(
 			metrics (List[metric])	: a list of metrics to run on the passed files.
 									  (these are defined above in this file).
 									  Default runs all metrics defined in this file.
-			neg_only (bool)			: whether to run on all sentences or only those with the 'neg' task.
-									  to be removed soon.
 			return_results (bool)	: whether and in what format to return the individual results.
 									  default returns only the mean accuracy.
 									  pass 'list', 'dict', or 'df'/'dataframe' to get the individual results
