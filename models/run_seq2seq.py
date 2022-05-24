@@ -597,8 +597,8 @@ def main():
 		
 		basename = os.path.basename(data_args.validation_file).replace(".json.gz", "")
 		
-		with gzip.open(data_args.validation_file.replace('.json.gz', '_metadata.json.gz'), 'r', encoding='utf-8') as in_file:
-			metadata = json.load(in_file)	
+		with gzip.open(data_args.validation_file.replace('.json.gz', '_metadata.json.gz'), 'rt', encoding='utf-8') as in_file:
+			metadata = [json.load(l) for l in in_file.readlines()]	
 		
 		for path in glob.glob(os.path.join(training_args.output_dir, "checkpoint-*", "")):
 			output_pred_file = os.path.join(path, basename + ".eval_preds_seq2seq.txt")
@@ -657,7 +657,12 @@ def main():
 		eval_preds 	= pd.concat([pd.read_csv(eval_file) for eval_file in eval_files], ignore_index=True)
 		eval_preds 	= eval_preds.sort_values('iteration').reset_index(drop=True)
 		
-		grouping_vars = [c for c in eval_preds.columns if not c in ['iteration'] + metric_names]
+		grouping_vars = [
+			c for c in eval_preds.columns 
+			if not c in ['iteration'] 
+						+ metric_names 
+						+ ['source_pos_seq', 'target_pos_seq', 'trn_lang', 'tgt_lang']
+		]
 		
 		title = os.path.split(training_args.output_dir)
 		title = [s for s in title if s][-1]

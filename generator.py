@@ -326,6 +326,8 @@ def get_english_example_metadata(
 		tgt_pos_seq 		= get_english_pos_seq(target)
 		metadata.update({'target_pos_seq': tgt_pos_seq})
 	
+	metadata.update({'polarity': pfx})
+	
 	return metadata
 
 def get_german_pos_seq(t: Tree) -> str:
@@ -468,6 +470,8 @@ def get_german_example_metadata(
 		tgt_pos_seq = get_german_pos_seq(target)
 		metadata.update({'target_pos_seq': tgt_pos_seq})
 	
+	metadata.update({'polarity': pfx})
+	
 	return metadata
 
 def get_turkish_pos_seq(t: Tree) -> str:
@@ -544,6 +548,8 @@ def get_turkish_example_metadata(
 		tgt_main_clause_v.set_label(f'{tgt_main_clause_v.label().symbol()} Neg')
 		tgt_pos_seq 		= get_turkish_pos_seq(target)
 		metadata.update({'target_pos_seq': tgt_pos_seq})
+	
+	metadata.update({'polarity': pfx})
 	
 	return metadata
 

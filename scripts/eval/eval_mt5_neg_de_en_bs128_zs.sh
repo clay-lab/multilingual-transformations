@@ -5,10 +5,10 @@
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=30GB
-#SBATCH --time=00:15:00
+#SBATCH --time=10:00:00
 #SBATCH --gpus=v100:1
 #SBATCH --partition=gpu
-#SBATCH --mail-type=ALL
+#SBATCH --mail-type=END,FAIL,INVALID_DEPEND
 
 module load CUDA
 module load cuDNN
