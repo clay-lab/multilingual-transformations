@@ -99,7 +99,8 @@ def format_tree_string(
 		t = t.replace('  ', ' ')
 		t += '.'
 	else:
-		# can't due this in header due to a circular import
+		# can't due this in header due to a circular import,
+		# but we still want to keep the vowel harmony stuff with the turkish grammar
 		from turkish_grammar import vowelharmony, vowelharmony_n
 		
 		t = ''.join(t.leaves())
@@ -609,9 +610,9 @@ def create_dataset_json(
 				prefixes[pfx] = 1 if not pfx in prefixes else prefixes[pfx] + 1
 				l += [{
 					'translation': {
-						'src'	: format_tree_string(source, grammar, pfx), 
+						'src'	: format_tree_string(source, grammar.lang, pfx), 
 						'prefix': pfx, 
-						'tgt'	: format_tree_string(target, grammar, pfx)
+						'tgt'	: format_tree_string(target, grammar.lang, pfx)
 					}
 				}]
 			
