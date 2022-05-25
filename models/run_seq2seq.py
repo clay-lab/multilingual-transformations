@@ -23,7 +23,9 @@ Fine-tuning the library models for sequence to sequence.
 import os
 import re
 import sys
+import gzip
 import glob
+import json
 import torch
 import logging
 import transformers
@@ -598,7 +600,7 @@ def main():
 		basename = os.path.basename(data_args.validation_file).replace(".json.gz", "")
 		
 		with gzip.open(data_args.validation_file.replace('.json.gz', '_metadata.json.gz'), 'rt', encoding='utf-8') as in_file:
-			metadata = [json.load(l) for l in in_file.readlines()]	
+			metadata = [json.loads(l) for l in in_file.readlines()]	
 		
 		for path in glob.glob(os.path.join(training_args.output_dir, "checkpoint-*", "")):
 			output_pred_file = os.path.join(path, basename + ".eval_preds_seq2seq.txt")
@@ -643,9 +645,10 @@ def main():
 				metric_names = list(metrics.keys())
 				
 				# put all the metrics into a single list of dicts
-				metrics = [{k: v for d in ds for k, v in d.items()} for ds in zip(*[props[m] for m in props], metadata)]
+				metrics = [{k: v for d in ds for k, v in d.items()} for ds in zip(*[metrics[m] for m in metrics], metadata)]
+				metrics = pd.DataFrame(metrics)
 				metrics.insert(0, 'iteration', it)
-				metrics = metrics[[c for c in metrics.columns if not c in names] + [names]]
+				metrics = metrics[[c for c in metrics.columns if not c in metric_names] + metric_names]
 				metrics.to_csv(output_eval_file, index=False, na_rep='NaN')
 		
 		# plot learning curve

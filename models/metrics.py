@@ -262,7 +262,7 @@ def trn_lang_negation_in_prediction(
 	trn_lang: str
 ) -> re.Match:
 	'''Is the neg word from the training language in the sentence?'''
-	return NEG_REGEXES[trn_lang].search(LOWERCASE[trn_lang](pred_sentence))
+	return bool(NEG_REGEXES[trn_lang].search(LOWERCASE[trn_lang](pred_sentence)))
 
 @metric
 def tgt_lang_negation_in_prediction(
@@ -270,7 +270,7 @@ def tgt_lang_negation_in_prediction(
 	tgt_lang: str
 ) -> re.Match:
 	'''Is the neg word from the target language in the sentence?'''
-	return NEG_REGEXES[tgt_lang].search(LOWERCASE[tgt_lang](pred_sentence))
+	return bool(NEG_REGEXES[tgt_lang].search(LOWERCASE[tgt_lang](pred_sentence)))
 
 """
 @metric
