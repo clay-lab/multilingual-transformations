@@ -325,7 +325,7 @@ def one_negation(
 	tgt_lang: str
 ) -> bool:
 	'''Is there exactly one negation in the sentence?'''
-	for lang in [trn_lang, tgt_lang]
+	for lang in [trn_lang, tgt_lang]:
 		pred_sentence 	= NEG_REGEXES[lang].sub('[NEG]', pred_sentence)
 	
 	return len(re.findall(r'\[NEG\]', pred_sentence)) == 1
