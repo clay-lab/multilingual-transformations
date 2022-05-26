@@ -667,7 +667,6 @@ def main():
 		title = f'training: {title}, test: {re.findall("(neg_.*)_.*?", basename)[0]}'
 		
 		with PdfPages(os.path.join(training_args.output_dir, basename + ".learning_curves.pdf")) as pdf:
-		with PdfPages('test.pdf') as pdf:
 			common_kwargs = dict(x='iteration', ci=None)
 			
 			# var is None is used for an overall plot without groups
