@@ -32,15 +32,14 @@ import transformers
 
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
-
-from matplotlib.backends.backend_pdf import PdfPages
 
 from typing import Optional
 from metrics import compute_metrics as run_metrics # workaround since hf already defines a function with this name
 from operator import itemgetter
 from datasets import load_dataset, load_metric
+from matplotlib import pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 from dataclasses import dataclass, field
 from transformers import (
 	AutoConfig,
@@ -658,14 +657,8 @@ def main():
 		]
 		
 		eval_preds 	= pd.concat([pd.read_csv(eval_file) for eval_file in eval_files], ignore_index=True)
-		eval_preds 	= eval_preds.sort_values('iteration').reset_index(drop=True)
 		
-		grouping_vars = [
-			c for c in eval_preds.columns 
-			if not c in ['iteration'] 
-						+ metric_names 
-						+ ['source_pos_seq', 'target_pos_seq', 'trn_lang', 'tgt_lang']
-		]
+		grouping_vars = [k for k in list(metadata[0].keys()) if not 'pos_seq' in k]
 		
 		title = os.path.split(training_args.output_dir)
 		title = [s for s in title if s][-1]
@@ -674,13 +667,15 @@ def main():
 		title = f'training: {title}, test: {re.findall("(neg_.*)_.*?", basename)[0]}'
 		
 		with PdfPages(os.path.join(training_args.output_dir, basename + ".learning_curves.pdf")) as pdf:
-			common_kwargs = dict(data=eval_preds, x='iteration', ci=None)
+		with PdfPages('test.pdf') as pdf:
+			common_kwargs = dict(x='iteration', ci=None)
 			
 			# var is None is used for an overall plot without groups
 			for var in [None] + grouping_vars:
 				for c in metric_names:
 					plot_kwargs = common_kwargs.copy()
 					plot_kwargs.update(dict(y=c))
+					plot_kwargs.update(dict(data=eval_preds if var is None else eval_preds.sort_values(var).reset_index(drop=True)))
 					plot_kwargs.update(dict(label=c.replace('_', ' ')) if var is None else dict(hue=var))
 					
 					sns.lineplot(**plot_kwargs)
@@ -688,8 +683,17 @@ def main():
 					if var is not None or c == metric_names[-1]:
 						ax = plt.gca()
 						
-						# set legend properties for display
-						ax.legend(prop={'size': 8})
+						# add count for each condition to legend
+						legend_kwargs = dict(fontsize=8)
+						
+						if var is not None:
+							handles, labels = ax.get_legend_handles_labels()
+							counts = eval_preds[var].value_counts()
+							counts.index = counts.index.astype(str) # cast to string for boolean and int indices
+							labels = [label + f' ($n={counts[label]}$)'for label in labels]
+							legend_kwargs.update(dict(handles=handles, labels=labels))
+						
+						ax.legend(**legend_kwargs)						
 						ax.get_legend().set_title(var.replace('_', ' ') if var is not None else 'metric')
 						
 						# set axis ticks and limits for display
@@ -702,7 +706,7 @@ def main():
 						
 						fig = plt.gcf()
 						fig.set_size_inches(8, 6)
-						suptitle = f'{title}' + (f', groups: {var}\n{c}' if var is not None else '')
+						suptitle = f'{title}' + (f', groups: {var.replace("_", " ")}\n{c.replace("_", " ")}' if var is not None else '')
 						fig.suptitle(suptitle)
 						pdf.savefig(bbox_inches='tight')
 						plt.close()
