@@ -696,7 +696,7 @@ def main():
 						ax.get_legend().set_title(var.replace('_', ' ') if var is not None else 'metric')
 						
 						# set axis ticks and limits for display
-						plt.xticks(eval_preds.iteration.unique())
+						plt.xticks([c for c in eval_preds.iteration.unique() if c % 1000 == 0])
 						_, ymargin = ax.margins()
 						ax.set_ylim((0-ymargin, 1+ymargin))
 						
