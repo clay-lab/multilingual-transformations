@@ -658,7 +658,7 @@ def main():
 		
 		eval_preds 	= pd.concat([pd.read_csv(eval_file) for eval_file in eval_files], ignore_index=True)
 		
-		grouping_vars = [k for k in list(metadata[0].keys()) if not 'pos_seq' in k]
+		grouping_vars = [k for k in list(metadata[0].keys()) if not 'pos_seq' in k and not k == 'polarity']
 		
 		title = os.path.split(training_args.output_dir)
 		title = [s for s in title if s][-1]
@@ -667,6 +667,8 @@ def main():
 		title = f'training: {title}, test: {re.findall("(neg_.*)_.*?", basename)[0]}'
 		
 		with PdfPages(os.path.join(training_args.output_dir, basename + ".learning_curves.pdf")) as pdf:
+		title = 'training: neg_de, test: neg_en'
+		with PdfPages('test.pdf') as pdf:
 			common_kwargs = dict(x='iteration', ci=None)
 			
 			# var is None is used for an overall plot without groups
@@ -674,8 +676,16 @@ def main():
 				for c in metric_names:
 					plot_kwargs = common_kwargs.copy()
 					plot_kwargs.update(dict(y=c))
-					plot_kwargs.update(dict(data=eval_preds if var is None else eval_preds.sort_values(var).reset_index(drop=True)))
+					plot_kwargs.update(dict(
+						data = eval_preds
+								if var is None 
+								else eval_preds.assign(
+									**{var: [' + '.join([p, str(v)]) if not (isinstance(v,float) and np.isnan(v)) else np.nan for p, v in zip(eval_preds.polarity, eval_preds[var])]}
+								).sort_values(var).reset_index(drop=True)
+						))
 					plot_kwargs.update(dict(label=c.replace('_', ' ')) if var is None else dict(hue=var))
+					if var is None:
+						plot_kwargs.update(dict(style='polarity'))
 					
 					sns.lineplot(**plot_kwargs)
 					
@@ -685,18 +695,34 @@ def main():
 						# add count for each condition to legend
 						legend_kwargs = dict(fontsize=8)
 						
+						handles, labels = ax.get_legend_handles_labels()
 						if var is not None:
-							handles, labels = ax.get_legend_handles_labels()
-							counts = eval_preds[var].value_counts()
+							counts = plot_kwargs['data'][var].value_counts()
 							counts.index = counts.index.astype(str) # cast to string for boolean and int indices
 							labels = [label + f' ($n={counts[label]}$)'for label in labels]
-							legend_kwargs.update(dict(handles=handles, labels=labels))
+						else:
+							# this is for the overall plot
+							# since we plot each line one at a time due to the data format, we end up with a lot of
+							# duplicated legend entries we don't want. this removes them by filtering to the first instance of each
+							indices = [
+										i for i, label in enumerate(labels + [None]) 
+										if not label == None and 
+										   label == (labels + [None])[i+1] or
+										   (
+										   		(label in ['neg', 'pos'] and 
+										   		i > len(labels)-3)
+										   )
+									]
+							handles = [handles[i] for i in indices]
+							labels = [labels[i] for i in indices]
 						
-						ax.legend(**legend_kwargs)						
-						ax.get_legend().set_title(var.replace('_', ' ') if var is not None else 'metric')
+						legend_kwargs.update(dict(handles=handles, labels=labels))
+						
+						ax.legend(**legend_kwargs)
+						ax.get_legend().set_title(f'polarity + {var.replace("_", " ")}' if var is not None else 'metric')
 						
 						# set axis ticks and limits for display
-						plt.xticks([c for c in eval_preds.iteration.unique() if c % 1000 == 0])
+						plt.xticks([c for c in plot_kwargs['data'].iteration.unique() if c % 1000 == 0])
 						_, ymargin = ax.margins()
 						ax.set_ylim((0-ymargin, 1+ymargin))
 						
@@ -705,7 +731,7 @@ def main():
 						
 						fig = plt.gcf()
 						fig.set_size_inches(8, 6)
-						suptitle = f'{title}' + (f', groups: {var.replace("_", " ")}\n{c.replace("_", " ")}' if var is not None else '')
+						suptitle = f'{title}' + (f', groups: polarity + {var.replace("_", " ")}\n{c.replace("_", " ")}' if var is not None else '')
 						fig.suptitle(suptitle)
 						pdf.savefig(bbox_inches='tight')
 						plt.close()
