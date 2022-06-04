@@ -835,7 +835,7 @@ def create_mt5_scripts(
 		'',
 		'source activate /gpfs/loomis/project/frank/ref4/conda_envs/py38',
 		'',
-		'python core/models/run_seq2seq.py \\',
+		'python core/run_seq2seq.py \\',
 		"	--model_name_or_path 'google/mt5-base' \\",
 		'	--do_train \\',
 		'	--task translation_src_to_tgt \\',
