@@ -118,7 +118,7 @@ def parse_to_pos(
 	# deal with ambiguous pos terms if any don't match
 	comparison_pos_seq = comparison_pos_seq.split() if comparison_pos_seq is not None else comparison_pos_seq
 	
-	if any(pred != comp for pred, comp in zip(pos_seq, comparison_pos_seq)) and len(pos_seq) == len(comparison_pos_seq):
+	if comparison_pos_seq is not None and  any(pred != comp for pred, comp in zip(pos_seq, comparison_pos_seq)) and len(pos_seq) == len(comparison_pos_seq):
 		# get a dict of lists mapping each ambiguious word in the target and training languages to a list of the possible other tags they could have
 		tgt_ambiguities = {w: list(set([d[w] for d in tgt_word_to_pos if w in d])) for d in tgt_word_to_pos for w in d.keys()}
 		tgt_ambiguities = {w: l for w, l in tgt_ambiguities.items() if len(l) > 1}
@@ -570,17 +570,17 @@ def compute_metrics(
 		
 		metadata_jsons 	= [json.loads(metadata_line) for metadata_line in metadata_lines]
 		if all('source_pos_seq' in metadata_json.keys() for metadata_json in metadata_jsons):
-		 	src_pos_seq = [metadata_json['source_pos_seq'] for metadata_json in metadata_jsons]
+		 	source_pos_seq = [metadata_json['source_pos_seq'] for metadata_json in metadata_jsons]
 		else:
-			src_pos_seq = None
+			source_pos_seq = None
 		
-		if all('tgt_pos_seq' in metadata_json.keys() for metadata_json in metadata_jsons):
-			tgt_pos_seq = [metadata_json['target_pos_seq'] for metadata_json in metadata_jsons]
+		if all('target_pos_seq' in metadata_json.keys() for metadata_json in metadata_jsons):
+			target_pos_seq = [metadata_json['target_pos_seq'] for metadata_json in metadata_jsons]
 		else:
-			tgt_pos_seq = None
+			target_pos_seq = None
 	else:
-		src_pos_seq = None
-		tgt_pos_seq = None
+		source_pos_seq = None
+		target_pos_seq = None
 	
 	gold_file 		= re.sub(r'\.gz$', '', gold_file)
 	
@@ -612,8 +612,8 @@ def compute_metrics(
 			pred_sentence=pred_lines,
 			gold_sentence=gold_lines,
 			src_sentence=src_lines,
-			src_pos_seq=src_tgt_seq,
-			tgt_pos_seq=tgt_pos_seq,
+			src_pos_seq=source_pos_seq,
+			tgt_pos_seq=target_pos_seq,
 			trn_lang=trn_lang,
 			tgt_lang=tgt_lang
 		)
