@@ -16,7 +16,7 @@ module load miniconda
 
 source activate /gpfs/loomis/project/frank/ref4/conda_envs/py38
 
-python models/run_seq2seq.py \
+python core/models/run_seq2seq.py \
 	--model_name_or_path 'google/mt5-base' \
 	--do_eval \
 	--do_learning_curve \

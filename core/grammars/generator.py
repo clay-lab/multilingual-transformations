@@ -101,7 +101,7 @@ def format_tree_string(
 	else:
 		# can't due this in header due to a circular import,
 		# but we still want to keep the vowel harmony stuff with the turkish grammar
-		from turkish_grammar import vowelharmony, vowelharmony_n
+		from .turkish_grammar import vowelharmony, vowelharmony_n
 		
 		t = ''.join(t.leaves())
 		t = vowelharmony(t) if not pfx == 'neg' else vowelharmony_n(t)
@@ -170,7 +170,7 @@ def get_pos_labels(t: Tree) -> List[str]:
 	for child in t:
 		if isinstance(child, Tree) and not isinstance(child[0], str):
 			labels.extend(get_pos_labels(child))
-		elif isinstance(child, str):
+		elif isinstance(child, str) or child[0] == '':
 			pass
 		elif not isinstance(child.label(), str):
 			labels.append(child.label().symbol())
@@ -196,9 +196,8 @@ def grep_next_subtree(
 	
 	return subt
 
-def get_english_pos_seq(t: Tree) -> str:
+def get_english_pos_seq(pos_seq: List[str]) -> str:
 	'''Remove unwanted info from English pos tags for comparison purposes and return as a string.'''
-	pos_seq = get_pos_labels(t)
 	pos_seq = [
 		pos_tag
 			.replace('Sg', '')
@@ -209,7 +208,6 @@ def get_english_pos_seq(t: Tree) -> str:
 			.replace('IV', 'V')
 			.replace('comma', '')
 			.replace('PN', 'N')
-			.replace('NTand', '')
 		for pos_tag in pos_seq
 	]
 	pos_seq = '[' + '] ['.join([l for tag in [pos_tag.split() for pos_tag in pos_seq if pos_tag] for l in tag]) + ']'
@@ -306,7 +304,7 @@ def get_english_example_metadata(
 		if child[0] == '':
 			child.set_label('')
 		
-	source_pos_seq = get_english_pos_seq(source)
+	source_pos_seq = get_english_pos_seq(get_pos_labels(source))
 	metadata.update({'source_pos_seq': source_pos_seq})
 	
 	if pfx == 'pos':
@@ -324,16 +322,15 @@ def get_english_example_metadata(
 				child.set_label('')
 		
 		tgt_main_clause_m.set_label('M Neg')
-		tgt_pos_seq 		= get_english_pos_seq(target)
+		tgt_pos_seq 		= get_english_pos_seq(get_pos_labels(target))
 		metadata.update({'target_pos_seq': tgt_pos_seq})
 	
 	metadata.update({'polarity': pfx})
 	
 	return metadata
 
-def get_german_pos_seq(t: Tree) -> str:
+def get_german_pos_seq(pos_seq: List[str]) -> str:
 	'''Remove unwanted info from German pos tags for comparison purposes and return as a string.'''
-	pos_seq = get_pos_labels(t)
 	pos_seq = [re.sub('(Sg|Pl)', '', pos_tag) for pos_tag in pos_seq]
 	pos_seq = [re.sub('(Nom|Acc)', '', pos_tag) for pos_tag in pos_seq]
 	pos_seq = [re.sub('(TV|IV)', 'V', pos_tag) for pos_tag in pos_seq]
@@ -446,7 +443,7 @@ def get_german_example_metadata(
 	})
 	
 	# get pos seq with details suppressed	
-	source_pos_seq = get_german_pos_seq(source)
+	source_pos_seq = get_german_pos_seq(get_pos_labels(source))
 	metadata.update({'source_pos_seq': source_pos_seq})
 	
 	if pfx == 'pos':
@@ -458,8 +455,12 @@ def get_german_example_metadata(
 			tgt_main_clause_vp 	= grep_next_subtree(tgt_main_clause_mp, 'VP')
 			tgt_main_clause_vp 	= grep_next_subtree(tgt_main_clause_vp, 'VP') # do this twice because of how the german grammar is set up
 			tgt_main_clause_vp 	= grep_next_subtree(tgt_main_clause_vp, '(IVP|TVP(Masc|Fem|Neut)?)')
-			tgt_main_clause_v 	= grep_next_subtree(tgt_main_clause_vp, '(IV|TV)$')
-			tgt_main_clause_v.set_label(f'Neg {tgt_main_clause_v.label().symbol()}')
+			tgt_main_clause_obj_det = grep_next_subtree(tgt_main_clause_vp, 'Det(Masc|Fem|Neut|Pl)Acc')
+			if tgt_main_clause_obj_det is not None and 'viele' in tgt_main_clause_obj_det[0]:
+				tgt_main_clause_obj_det.set_label(f'Neg {tgt_main_clause_obj_det.label().symbol()}')
+			else:
+				tgt_main_clause_v 	= grep_next_subtree(tgt_main_clause_vp, '(IV|TV)$')
+				tgt_main_clause_v.set_label(f'Neg {tgt_main_clause_v.label().symbol()}')
 		else:
 			main_clause_indef_det = next(
 				tgt_main_clause.subtrees(
@@ -468,19 +469,18 @@ def get_german_example_metadata(
 			)
 			main_clause_indef_det.set_label(f'Neg {main_clause_indef_det.label().symbol()}')
 			
-		tgt_pos_seq = get_german_pos_seq(target)
+		tgt_pos_seq = get_german_pos_seq(get_pos_labels(target))
 		metadata.update({'target_pos_seq': tgt_pos_seq})
 	
 	metadata.update({'polarity': pfx})
 	
 	return metadata
 
-def get_turkish_pos_seq(t: Tree) -> str:
+def get_turkish_pos_seq(pos_seq: List[str]) -> str:
 	'''Remove unwanted info from Turkish pos tags for comparison purposes and return as a string.'''
-	pos_seq = get_pos_labels(t)
 	pos_seq = [l for tag in [pos_tag.split() for pos_tag in pos_seq] for l in tag]
 	pos_seq = [pos_tag.split('_',1)[0] for pos_tag in pos_seq]
-	pos_seq = [re.sub('P$', '', pos_tag) for pos_tag in pos_seq]
+	pos_seq = [re.sub(r'(?<!^)P$', '', pos_tag) for pos_tag in pos_seq]
 	pos_seq = [re.sub('(Tense|Person[1-3])', '', pos_tag) for pos_tag in pos_seq]
 	pos_seq = [l for tag in [pos_tag.split() for pos_tag in pos_seq] for l in tag]
 	
@@ -535,7 +535,7 @@ def get_turkish_example_metadata(
 	metadata.update({'post_main_advps': post_main_advps})
 	metadata.update({'total_advps': pre_main_advps + post_main_advps})
 	
-	source_pos_seq = get_turkish_pos_seq(source)
+	source_pos_seq = get_turkish_pos_seq(get_pos_labels(source))
 	metadata.update({'source_pos_seq': source_pos_seq})
 	
 	if pfx == 'pos':
@@ -547,7 +547,7 @@ def get_turkish_example_metadata(
 		tgt_main_clause_vp 	= grep_next_subtree(tgt_main_clause, 'VP')
 		tgt_main_clause_v 	= grep_next_subtree(tgt_main_clause_vp, 'stem')
 		tgt_main_clause_v.set_label(f'{tgt_main_clause_v.label().symbol()} Neg')
-		tgt_pos_seq 		= get_turkish_pos_seq(target)
+		tgt_pos_seq 		= get_turkish_pos_seq(get_pos_labels(target))
 		metadata.update({'target_pos_seq': tgt_pos_seq})
 	
 	metadata.update({'polarity': pfx})
@@ -733,7 +733,7 @@ def create_negation_datasets(
 			module1 		= configs[lang][1].split('.')[0]
 			module2 		= configs[lang][2].split('.')[0]
 			
-			exec(f'import {module1}, {module2}')
+			exec(f'from . import {module1}, {module2}')
 			
 			grammar 		= eval(configs[lang][1])
 			ex_generator 	= eval(configs[lang][2])
@@ -835,7 +835,7 @@ def create_mt5_scripts(
 		'',
 		'source activate /gpfs/loomis/project/frank/ref4/conda_envs/py38',
 		'',
-		'python models/run_seq2seq.py \\',
+		'python core/models/run_seq2seq.py \\',
 		"	--model_name_or_path 'google/mt5-base' \\",
 		'	--do_train \\',
 		'	--task translation_src_to_tgt \\',
@@ -933,7 +933,3 @@ def load_config(path: 'str or Pathlike' = None) -> Dict[str,List]:
 		configs = json.load(in_file)
 	
 	return configs
-
-if __name__ == '__main__':
-	
-	create_and_combine_negation_datasets()

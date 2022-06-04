@@ -6,7 +6,7 @@ import random
 
 from nltk import PCFG, Tree, nonterminals
 from typing import *
-from generator import generate, create_dataset_json, combine_dataset_jsons
+from .generator import generate, create_dataset_json, combine_dataset_jsons
 
 S, VP, NP_nom3, NP_acc, PP, V_trans, Person, V_intrans = nonterminals(
     'S, VP, NP_nom3, NP_acc, PP, V_trans, Person, V_intrans'

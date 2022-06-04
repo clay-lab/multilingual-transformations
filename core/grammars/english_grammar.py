@@ -4,8 +4,8 @@ from nltk import nonterminals
 
 import random
 from typing import *
-from generator import generate, format_tree_string
-from generator import create_dataset_json, combine_dataset_jsons
+from .generator import generate, format_tree_string
+from .generator import create_dataset_json, combine_dataset_jsons
 """
 	Create some nonterminals
 
@@ -64,7 +64,7 @@ not_grammar = PCFG.fromstring("""
 	S -> AdvP comma S [0.1] | S1 [0.9]
 	S1 -> S1 comma AdvP [0.1] | S2 [0.9]
 	S2 -> NPNom MP [1.0]
-	AdvP -> Adv NPNom MP [0.9] | AdvP comma NTand AdvP [0.1]
+	AdvP -> Adv NPNom MP [0.9] | AdvP comma Conj AdvP [0.1]
 	
 	NPNom -> NPSgNom [0.4] | NPPlNom [0.4] | PN [0.2]
 	
@@ -83,7 +83,7 @@ not_grammar = PCFG.fromstring("""
 	NPPlAcc -> DetPl NPlAcc [1.0]
 	
 	DetSg -> 'the' [0.5] | 'a' [0.5]
-	DetPl -> 'the' [0.4] | 'some' [0.4] | '' [0.2]
+	DetPl -> 'the' [0.4] | 'some' [0.4] | '' [0.2] | 'any' [0.0]
 	
 	NSgNom -> 'student' [0.25] | 'professor' [0.25] | 'wizard' [0.25] | 'witch' [0.25]
 	NSgAcc -> 'cake' [0.1] | 'pancake' [0.1] | 'strudel' [0.1] | 'donut' [0.1] | 'candy' [0.1] | 'baklava' [0.1] | 'cookie' [0.1] | 'waffle' [0.1] | 'pastry' [0.1] | 'croissant' [0.1]
@@ -101,7 +101,7 @@ not_grammar = PCFG.fromstring("""
 	
 	RP -> 'that' [0.5] | '' [0.5]
 	
-	NTand -> 'and' [1.0]
+	Conj -> 'and' [1.0]
 	
 	Adv -> 'because' [0.5] | 'since' [0.5]
 	
@@ -178,14 +178,3 @@ def test_file(grammar: PCFG = not_grammar, n: int = 10, filename: str = 'test.tx
 	with open(filename, 'w') as out:
 		for pair in s:
 			out.write(' '.join(pair) + '\n\n')
-
-if __name__ == '__main__':
-	create_dataset_json(
-		not_grammar, 
-		neg_or_pos, 
-		file_prefix='neg_en/neg_en',
-		train=100000, 
-		dev=1000, 
-		test=10000, 
-		gen=10000
-	)

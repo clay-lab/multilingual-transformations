@@ -4,8 +4,8 @@ from nltk import nonterminals
 
 import random
 from typing import *
-from generator import generate
-from generator import create_dataset_json, combine_dataset_jsons
+from .generator import generate
+from .generator import create_dataset_json, combine_dataset_jsons
 """
 	Create some nonterminals
 
@@ -193,7 +193,7 @@ nicht_grammar = PCFG.fromstring("""
 	RPNeutAcc -> 'das' [1.0]
 	RPPlAcc -> 'die' [1.0]
 	
-	NTand -> 'und' [1.0]
+	Conj -> 'und' [1.0]
 	
 	Adv -> 'da' [0.5] | 'weil' [0.5]
 	
@@ -408,14 +408,3 @@ def test_file(grammar: PCFG = nicht_grammar, n: int = 10, filename: str = 'test.
 	with open(filename, 'w') as out:
 		for pair in s:
 			out.write(' '.join(pair) + '\n\n')
-
-if __name__ == '__main__':
-	create_dataset_json(
-		nicht_grammar, 
-		neg_or_pos, 
-		file_prefix='neg_de/neg_de', 
-		train=100000, 
-		dev=1000, 
-		test=10000, 
-		gen=10000
-	)
