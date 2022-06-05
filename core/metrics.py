@@ -130,9 +130,9 @@ def parse_to_pos(
 		# if so, replace it with that pos tag in the predicted pos tag
 		for i, word in enumerate(words):
 			if not pos_seq[i] == comparison_pos_seq[i] and (word in trn_ambiguities or word in tgt_ambiguities):
-				if comparison_pos_seq[i] in tgt_ambiguities[word]:
+				if word in tgt_ambiguities and comparison_pos_seq[i] in tgt_ambiguities[word]:
 					pos_seq[i] = comparison_pos_seq[i]
-				elif comparison_pos_seq[i] in trn_ambiguities[word]:
+				elif word in trn_ambiguities and comparison_pos_seq[i] in trn_ambiguities[word]:
 					pos_seq[i] = comparison_pos_seq[i]
 	
 	return ' '.join(pos_seq)
