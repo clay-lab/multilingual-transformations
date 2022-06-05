@@ -567,32 +567,34 @@ def main():
 			# Need to save the state, since Trainer.save_model saves only the tokenizer with the model
 			trainer.state.save_to_json(os.path.join(training_args.output_dir, "trainer_state.json"))
 	
+	# We don't actually use this at all, since accuracy is always zero and predictions are garbo before
+	# any fine-tuning.
 	# Evaluation
-	results = {}
-	if training_args.do_eval:
-		logger.info("*** Evaluate ***")
+	# results = {}
+	# if training_args.do_eval:
+	# 	logger.info("*** Evaluate ***")
 		
-		basename = os.path.basename(data_args.validation_file).replace(".json.gz", "")
-		output_pred_file = os.path.join(training_args.output_dir, basename + ".eval_preds_seq2seq.txt")
+	# 	basename = os.path.basename(data_args.validation_file).replace(".json.gz", "")
+	# 	output_pred_file = os.path.join(training_args.output_dir, basename + ".eval_preds_seq2seq.txt")
 		
-		# do not re-compute predictions if they already exist
-		if not os.path.exists(output_pred_file):
-			predictions = trainer.predict(test_dataset=eval_dataset, max_length=100)
+	# 	# do not re-compute predictions if they already exist
+	# 	if not os.path.exists(output_pred_file):
+	# 		predictions = trainer.predict(test_dataset=eval_dataset, max_length=100)
 			
-			if trainer.is_world_process_zero():
-				with open(output_pred_file, "w") as writer:
-					for pred in tokenizer.batch_decode(predictions.predictions, skip_special_tokens=True):
-						writer.write(pred + "\n")
+	# 		if trainer.is_world_process_zero():
+	# 			with open(output_pred_file, "w") as writer:
+	# 				for pred in tokenizer.batch_decode(predictions.predictions, skip_special_tokens=True):
+	# 					writer.write(pred + "\n")
 			
-		metrics = run_metrics(output_pred_file, data_args.validation_file)	
+	# 	metrics = run_metrics(output_pred_file, data_args.validation_file)	
 		
-		if trainer.is_world_process_zero():
-			output_eval_file = os.path.join(training_args.output_dir, basename + ".eval_results_seq2seq.txt")
-			with open(output_eval_file, "w") as writer:
-				for m in metrics:
-					display_name = m.replace('_', ' ')
-					display_name = display_name[0].upper() + display_name[1:]
-					writer.write(f"{display_name} accuracy: {metrics[m]}\n")
+	# 	if trainer.is_world_process_zero():
+	# 		output_eval_file = os.path.join(training_args.output_dir, basename + ".eval_results_seq2seq.txt")
+	# 		with open(output_eval_file, "w") as writer:
+	# 			for m in metrics:
+	# 				display_name = m.replace('_', ' ')
+	# 				display_name = display_name[0].upper() + display_name[1:]
+	# 				writer.write(f"{display_name} accuracy: {metrics[m]}\n")
 	
 	if data_args.do_learning_curve:
 		
@@ -735,7 +737,7 @@ def main():
 						plt.close()
 						del fig
 	
-	return results	
+	# return results
 
 def _mp_fn(index):
 	# For xla_spawn (TPUs)
