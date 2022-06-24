@@ -94,7 +94,7 @@ def format_tree_string(
 	if not lang == 'tu':
 		t = ' '.join(t.leaves())
 		t = t.strip()
-		t = t[0].upper() + t[1:]
+		t = t.capitalize()
 		t = t.replace(' , ', ', ')
 		t = t.replace('  ', ' ')
 		t += '.'
